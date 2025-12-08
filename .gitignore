@@ -1,0 +1,17 @@
+# OS Generated Files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor Files
+.vscode/
+.idea/
+*.swp
+*~
+
+# Temporary Files
+*.tmp
+*.log
+
+# History Files
+.history/
