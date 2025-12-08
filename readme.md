@@ -27,23 +27,35 @@ Asset42Archive/
 
 ## Usage
 
-1. **Raw GitHub URLs**: Access files using the raw content URL format:
-   ```
-   https://raw.githubusercontent.com/ababdelo/Asset42Archive/main/[ProjectName]/assets/[path-to-file]
-   ```
+Assets are served via **jsDelivr CDN** to avoid CORS restrictions and provide fast global delivery.
 
-2. **In HTML**: Reference assets directly in HTML code served by the microcontroller:
-   ```html
-   <link rel="stylesheet" href="https://raw.githubusercontent.com/ababdelo/Asset42Archive/main/SAI42/assets/css/home.css">
-   <script src="https://raw.githubusercontent.com/ababdelo/Asset42Archive/main/SAI42/assets/js/home.js"></script>
-   <img src="https://raw.githubusercontent.com/ababdelo/Asset42Archive/main/SAI42/assets/images/logo.png">
-   ```
+**URL Format:**
+```
+https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/[ProjectName]/assets/[path-to-file]
+```
 
-3. **Benefits**:
-   - Minimal memory footprint on embedded devices
-   - Easy updates without reflashing the device
-   - Centralized asset management
-   - Browser handles all downloading and processing
+**In HTML:**
+```html
+<!-- CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/SAI42/assets/css/home.css">
+
+<!-- JavaScript -->
+<script src="https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/SAI42/assets/js/home.js"></script>
+
+<!-- Images -->
+<img src="https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/SAI42/assets/images/Others/hero.webp">
+
+<!-- Favicon -->
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/SAI42/assets/images/Others/logo/SAI42.ico">
+```
+
+**Benefits:**
+- No CORS restrictions (CSS/JS load without issues)
+- Fast global CDN delivery
+- Automatic caching for better performance
+- Minimal memory footprint on embedded devices
+- Easy updates without reflashing the device
+- Browser handles all downloading and processing
 
 ## Current Projects
 
@@ -51,9 +63,11 @@ Asset42Archive/
 
 ## Notes
 
+- Assets are served through jsDelivr CDN for optimal performance and CORS compatibility
 - Keep assets optimized for web delivery (minified CSS/JS, compressed images)
+- CDN cache updates within 24 hours after pushing to GitHub
+- Use manual cache purge at https://www.jsdelivr.com/tools/purge if immediate updates needed
 - Ensure file paths are consistent for easy URL construction
-- Browser caching will help with performance after initial load
 
 ## License
 This repository is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
