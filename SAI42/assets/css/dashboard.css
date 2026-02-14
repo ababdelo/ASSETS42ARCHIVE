@@ -91,7 +91,7 @@ body {
 	display: grid;
 	grid-template-columns: 1fr minmax(300px, 380px);
 	gap: 20px;
-	align-items: start;
+	align-items: center;
 }
 
 .content-wrapper {
@@ -464,7 +464,6 @@ body {
 	}
 
 	.schedule-panel {
-		max-width: 450px;
 		margin: 0 auto;
 	}
 }
