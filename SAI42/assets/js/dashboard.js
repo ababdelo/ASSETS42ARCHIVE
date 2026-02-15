@@ -1,407 +1,419 @@
-const API_KEY = "<-- API_KEY_PLACEHOLDER -->";
-let latestSensorData = null;
-let chartDataInitialized = false;
-const chartH = Highcharts.chart('sensors-chart', {
-   chart: {
-      type: 'areaspline',
-      animation: Highcharts.svg
-   },
-   title: {
-      text: ''
-   },
-   xAxis: {
-      type: 'datetime',
-      tickPixelInterval: 150
-   },
-   yAxis: [{
-      title: {
-         text: ''
-      },
-      tickPositions: [0, 25, 50, 75, 100],
-      labels: {
-         style: {
-            color: 'rgb(100,149,237)',
-            fontWeight: 'bold'
-         }
-      }
-   }, {
-      title: {
-         text: ''
-      },
-      tickPositions: [0, 10, 20, 30, 40],
-      opposite: true,
-      labels: {
-         style: {
-            color: 'rgb(247,38,59)',
-            fontWeight: 'bold'
-         }
-      }
-   }],
-   plotOptions: {
-      spline: {
-         lineWidth: 2,
-         marker: {
-            enabled: true
-         }
-      }
-   },
-   series: [{
-      name: 'Soil Moisture',
-      data: [],
-      yAxis: 0,
-      color: 'rgb(100,149,237)',
-      fillColor: 'rgba(100,149,237,0.2)'
-   }, {
-      name: 'Temperature',
-      data: [],
-      yAxis: 1,
-      color: 'rgba(247,38,59,0.2)'
-   }],
-   credits: {
-      enabled: false
-   }
-});
-const ws = new WebSocket('ws://' + location.hostname + '/ws');
-ws.onopen = () => console.log('WebSocket open');
-ws.onerror = e => console.error('WebSocket error', e);
-ws.onmessage = e => {
-   try {
-      const d = JSON.parse(e.data);
-      latestSensorData = d;
-      if (d.temperature >= 0) document.getElementById('temperatureValue').textContent = `${d.temperature} °C`;
-      if (d.humidity >= 0) document.getElementById('humidityValue').textContent = `${d.humidity} %`;
-      if (d.moisture >= 0) document.getElementById('moistureValue').textContent = `${d.moisture} %`;
-      if (d.lighting) document.getElementById('lightingValue').textContent = d.lighting;
-      if (d.weather) document.getElementById('weatherValue').textContent = d.weather;
-      const btn = document.getElementById('waterButton');
-      const span = document.getElementById('wateringValue');
-      const isOver = (d.plantStatus || '').toLowerCase() === 'overwatered';
-      if (d.pumpStatus === 'ON') {
-         span.textContent = 'ON';
-         btn.innerHTML = `<i class="fas fa-tint"></i> Watering${d.countdown > 0 ? ` (${d.countdown})` : ''}`;
-         btn.disabled = true;
-      } else if (isOver) {
-         btn.innerHTML = `<i class="fas fa-tint"></i> Water Plant`;
-         btn.disabled = true;
-         span.textContent = 'OFF';
-      } else {
-         span.textContent = 'OFF';
-         btn.innerHTML = `<i class="fas fa-tint"></i> Water Plant`;
-         btn.disabled = false;
-      }
-      const badge = document.getElementById('plantStatusBadge');
-      badge.textContent = d.plantStatus;
-      let statusColor = '#999';
-      switch ((d.plantStatus || '').toLowerCase()) {
-         case 'overwatered':
-            statusColor = '#61B8E4';
-            break;
-         case 'healthy':
-            statusColor = '#7DA417';
-            break;
-         case 'thirsty':
-            statusColor = '#F5BA0D';
-            break;
-         case 'dry':
-            statusColor = '#F7263B';
-            break;
-      }
-      badge.style.backgroundColor = statusColor;
-      badge.style.filter = `drop-shadow(0 0 20px ${statusColor})`;
-      document.getElementById('plantImage').style.filter = `drop-shadow(0 0 20px ${statusColor})`;
-      if (!chartDataInitialized) {
-         loadChartData();
-         chartDataInitialized = true;
-      }
-   } catch (err) {
-      console.error('WS parse error', err);
-   }
-};
+document.addEventListener("DOMContentLoaded", () => {
+   const API_KEY = "<-- API_KEY_PLACEHOLDER -->";
+   let latestSensorData = null;
+   let chartDataInitialized = false;
 
-function loadChartData() {
-   if (!latestSensorData) return;
-   const now = Date.now();
-   const m = parseFloat(latestSensorData.moisture) || 0;
-   const t = parseFloat(latestSensorData.temperature) || 0;
-   chartH.series[0].addPoint([now, m], true, chartH.series[0].data.length >= 7);
-   chartH.series[1].addPoint([now, t], true, chartH.series[1].data.length >= 7);
-}
-async function waterPlant() {
-   try {
-      const res = await fetch(`/water?time=5&token=${API_KEY}`);
-      if (!res.ok) throw new Error(res.statusText);
-      document.getElementById('wateringValue').textContent = 'ON';
-      const btn = document.getElementById('waterButton');
-      btn.innerHTML = `<i class="fas fa-tint"></i> Watering`;
-      btn.disabled = true;
-   } catch (err) {
-      console.error('Water API error', err);
-   }
-}
-document.getElementById('waterButton').addEventListener('click', waterPlant);
-
-// Circular Slider Logic
-const sliderHandle = document.getElementById('sliderHandle');
-const progressCircle = document.getElementById('progressCircle');
-const durationValue = document.getElementById('durationValue');
-const circularSlider = document.querySelector('.circular-slider');
-
-let radius = 85;
-let centerPoint = 110;
-let circumference = 2 * Math.PI * radius;
-let currentDuration = 15;
-let isDragging = false;
-
-// Initialize slider
-progressCircle.style.strokeDasharray = circumference;
-updateSlider(currentDuration);
-
-function updateSliderSize() {
-   const sliderWidth = circularSlider.offsetWidth;
-
-   if (sliderWidth <= 200) {
-      // Mobile size
-      radius = 75;
-      centerPoint = 90;
-   } else {
-      // Desktop size
-      radius = 85;
-      centerPoint = 110;
+   // ======= Restore Theme First =======
+   const savedTheme = localStorage.getItem("theme");
+   const toggleBtn = document.getElementById("themeToggle");
+   if (savedTheme === "dark") {
+      document.body.classList.add("dark");
+      toggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
    }
 
-   circumference = 2 * Math.PI * radius;
-
-   // Update SVG dimensions
-   const svg = document.querySelector('.slider-svg');
-   const track = document.querySelector('.slider-track');
-   const progress = document.querySelector('.slider-progress');
-
-   // Update viewBox for responsive scaling
-   const viewBoxSize = centerPoint * 2;
-   svg.setAttribute('viewBox', `0 0 ${viewBoxSize} ${viewBoxSize}`);
-
-   // Update circle positions
-   track.setAttribute('cx', centerPoint);
-   track.setAttribute('cy', centerPoint);
-   track.setAttribute('r', radius);
-   progress.setAttribute('cx', centerPoint);
-   progress.setAttribute('cy', centerPoint);
-   progress.setAttribute('r', radius);
-
-   // Update marker positions for mobile
-   if (sliderWidth <= 200) {
-      document.querySelectorAll('.step-marker').forEach(marker => {
-         const text = marker.textContent;
-         switch (text) {
-            case '0':
-               marker.style.top = '0px';
-               marker.style.left = '90px';
-               break;
-            case '5':
-               marker.style.top = '12px';
-               marker.style.right = '35px';
-               break;
-            case '10':
-               marker.style.top = '42px';
-               marker.style.right = '0px';
-               break;
-            case '15':
-               marker.style.top = '90px';
-               marker.style.right = '-8px';
-               break;
-            case '20':
-               marker.style.bottom = '38px';
-               marker.style.right = '0px';
-               break;
-            case '25':
-               marker.style.bottom = '8px';
-               marker.style.right = '35px';
-               break;
-            case '30':
-               marker.style.bottom = '-7px';
-               marker.style.left = '90px';
-               break;
-            case '35':
-               marker.style.bottom = '8px';
-               marker.style.left = '30px';
-               break;
-            case '40':
-               marker.style.bottom = '38px';
-               marker.style.left = '0px';
-               break;
-            case '45':
-               marker.style.top = '90px';
-               marker.style.left = '-8px';
-               break;
-            case '50':
-               marker.style.top = '42px';
-               marker.style.left = '0px';
-               break;
-            case '55':
-               marker.style.top = '12px';
-               marker.style.left = '30px';
-               break;
+   // ======= Highcharts Theme =======
+   function getChartTheme() {
+      const isDark = document.body.classList.contains('dark');
+      return {
+         chart: {
+            type: 'areaspline',
+            animation: Highcharts.svg,
+            backgroundColor: 'transparent'
+         },
+         title: {
+            text: ''
+         },
+         legend: {
+            itemStyle: {
+               color: isDark ? '#e4e4e4' : '#333',
+               cursor: 'pointer'
+            },
+            itemHoverStyle: {
+               color: isDark ? '#ffffff' : '#000000'
+            }
+         },
+         xAxis: {
+            type: 'datetime',
+            tickPixelInterval: 150,
+            labels: {
+               style: {
+                  color: isDark ? '#e4e4e4' : '#333'
+               }
+            },
+            lineColor: isDark ? '#444' : '#ddd',
+            tickColor: isDark ? '#444' : '#ddd'
+         },
+         yAxis: [{
+               title: {
+                  text: ''
+               },
+               tickPositions: [0, 25, 50, 75, 100],
+               labels: {
+                  style: {
+                     color: isDark ? '#7cb5ec' : 'rgb(100,149,237)',
+                     fontWeight: 'bold'
+                  }
+               },
+               gridLineColor: isDark ? '#333' : '#eee'
+            },
+            {
+               title: {
+                  text: ''
+               },
+               tickPositions: [0, 10, 20, 30, 40],
+               opposite: true,
+               labels: {
+                  style: {
+                     color: isDark ? '#f45b5b' : 'rgb(247,38,59)',
+                     fontWeight: 'bold'
+                  }
+               },
+               gridLineColor: isDark ? '#333' : '#eee'
+            }
+         ],
+         plotOptions: {
+            spline: {
+               lineWidth: 2,
+               marker: {
+                  enabled: true
+               }
+            }
+         },
+         series: [{
+               name: 'Soil Moisture',
+               data: [],
+               yAxis: 0,
+               color: isDark ? '#7cb5ec' : 'rgb(100,149,237)',
+               fillColor: isDark ? 'rgba(124,181,236,0.15)' : 'rgba(100,149,237,0.2)'
+            },
+            {
+               name: 'Temperature',
+               data: [],
+               yAxis: 1,
+               color: isDark ? '#f45b5b' : 'rgb(247,38,59)',
+               fillColor: isDark ? 'rgba(244,91,91,0.15)' : 'rgba(247,38,59,0.2)'
+            }
+         ],
+         credits: {
+            enabled: false
          }
-      });
-   } else {
-      // Reset to desktop positions
-      document.querySelectorAll('.step-marker').forEach(marker => {
-         const text = marker.textContent;
-         switch (text) {
-            case '0':
-               marker.style.top = '0px';
-               marker.style.left = '110px';
-               break;
-            case '5':
-               marker.style.top = '13px';
-               marker.style.right = '37px';
-               break;
-            case '10':
-               marker.style.top = '55px';
-               marker.style.right = '-5px';
-               break;
-            case '15':
-               marker.style.top = '112px';
-               marker.style.right = '-22px';
-               break;
-            case '20':
-               marker.style.bottom = '35px';
-               marker.style.right = '-7px';
-               break;
-            case '25':
-               marker.style.bottom = '-2px';
-               marker.style.right = '32px';
-               break;
-            case '30':
-               marker.style.bottom = '-18px';
-               marker.style.left = '110px';
-               break;
-            case '35':
-               marker.style.bottom = '-3px';
-               marker.style.left = '52px';
-               break;
-            case '40':
-               marker.style.bottom = '40px';
-               marker.style.left = '10px';
-               break;
-            case '45':
-               marker.style.top = '110px';
-               marker.style.left = '-5px';
-               break;
-            case '50':
-               marker.style.top = '55px';
-               marker.style.left = '10px';
-               break;
-            case '55':
-               marker.style.top = '15px';
-               marker.style.left = '50px';
-               break;
-         }
-      });
+      };
    }
 
-   return {
-      radius,
-      centerPoint,
-      circumference
+   // ======= Initialize Chart =======
+   let chartH = Highcharts.chart('sensors-chart', getChartTheme());
+
+   // ======= WebSocket for Live Sensor Data =======
+   const ws = new WebSocket('ws://' + location.hostname + '/ws');
+   ws.onopen = () => console.log('WebSocket open');
+   ws.onerror = e => console.error('WebSocket error', e);
+
+   ws.onmessage = e => {
+      try {
+         const d = JSON.parse(e.data);
+         latestSensorData = d;
+
+         if (d.temperature >= 0) document.getElementById('temperatureValue').textContent = `${d.temperature} °C`;
+         if (d.humidity >= 0) document.getElementById('humidityValue').textContent = `${d.humidity} %`;
+         if (d.moisture >= 0) document.getElementById('moistureValue').textContent = `${d.moisture} %`;
+         if (d.lighting) document.getElementById('lightingValue').textContent = d.lighting;
+         if (d.weather) document.getElementById('weatherValue').textContent = d.weather;
+
+         const btn = document.getElementById('waterButton');
+         const span = document.getElementById('wateringValue');
+         const isOver = (d.plantStatus || '').toLowerCase() === 'overwatered';
+
+         if (d.pumpStatus === 'ON') {
+            span.textContent = 'ON';
+            btn.innerHTML = `<i class="fas fa-tint"></i> Watering${d.countdown > 0 ? ` (${d.countdown})` : ''}`;
+            btn.disabled = true;
+         } else if (isOver) {
+            btn.innerHTML = `<i class="fas fa-tint"></i> Water Plant`;
+            btn.disabled = true;
+            span.textContent = 'OFF';
+         } else {
+            span.textContent = 'OFF';
+            btn.innerHTML = `<i class="fas fa-tint"></i> Water Plant`;
+            btn.disabled = false;
+         }
+
+         const badge = document.getElementById('plantStatusBadge');
+         badge.textContent = d.plantStatus;
+         let statusColor = '#999';
+         switch ((d.plantStatus || '').toLowerCase()) {
+            case 'overwatered':
+               statusColor = '#61B8E4';
+               break;
+            case 'healthy':
+               statusColor = '#7DA417';
+               break;
+            case 'thirsty':
+               statusColor = '#F5BA0D';
+               break;
+            case 'dry':
+               statusColor = '#F7263B';
+               break;
+         }
+         badge.style.backgroundColor = statusColor;
+         badge.style.filter = `drop-shadow(0 0 20px ${statusColor})`;
+         document.getElementById('plantImage').style.filter = `drop-shadow(0 0 20px ${statusColor})`;
+
+         if (!chartDataInitialized) {
+            loadChartData();
+            chartDataInitialized = true;
+         }
+      } catch (err) {
+         console.error('WS parse error', err);
+      }
    };
-}
 
-function updateSlider(minutes) {
-   currentDuration = Math.max(0, Math.min(60, minutes));
+   function loadChartData() {
+      if (!latestSensorData) return;
+      const now = Date.now();
+      const m = parseFloat(latestSensorData.moisture) || 0;
+      const t = parseFloat(latestSensorData.temperature) || 0;
+      chartH.series[0].addPoint([now, m], true, chartH.series[0].data.length >= 9);
+      chartH.series[1].addPoint([now, t], true, chartH.series[1].data.length >= 9);
+   }
 
-   const {
-      radius,
-      centerPoint,
-      circumference
-   } = updateSliderSize();
-   const angle = (currentDuration / 60) * 360;
-   const radians = (angle - 90) * (Math.PI / 180);
-   const x = centerPoint + radius * Math.cos(radians);
-   const y = centerPoint + radius * Math.sin(radians);
+   // ======= Water Plant API =======
+   async function waterPlant() {
+      try {
+         const res = await fetch(`/water?time=5&token=${API_KEY}`);
+         if (!res.ok) throw new Error(res.statusText);
+         document.getElementById('wateringValue').textContent = 'ON';
+         const btn = document.getElementById('waterButton');
+         btn.innerHTML = `<i class="fas fa-tint"></i> Watering`;
+         btn.disabled = true;
+      } catch (err) {
+         console.error('Water API error', err);
+      }
+   }
+   document.getElementById('waterButton').addEventListener('click', waterPlant);
 
-   sliderHandle.style.left = `${x}px`;
-   sliderHandle.style.top = `${y}px`;
+   // ======= Circular Slider Logic =======
+   const sliderHandle = document.getElementById('sliderHandle');
+   const progressCircle = document.getElementById('progressCircle');
+   const durationValue = document.getElementById('durationValue');
+   const circularSlider = document.querySelector('.circular-slider');
 
-   const offset = currentDuration === 0 ? circumference :
-      circumference - (currentDuration / 60) * circumference;
-   progressCircle.style.strokeDashoffset = offset;
-   durationValue.textContent = currentDuration;
-}
+   let radius = 85,
+      centerPoint = 110,
+      circumference = 2 * Math.PI * radius;
+   let currentDuration = 15,
+      isDragging = false;
 
-// Mouse events
-sliderHandle.addEventListener('mousedown', () => {
-   isDragging = true;
-   sliderHandle.style.cursor = 'grabbing';
-});
-
-document.addEventListener('mouseup', () => {
-   isDragging = false;
-   sliderHandle.style.cursor = 'grab';
-});
-
-document.addEventListener('mousemove', (e) => {
-   if (!isDragging) return;
-
-   const rect = circularSlider.getBoundingClientRect();
-   const centerX = rect.left + rect.width / 2;
-   const centerY = rect.top + rect.height / 2;
-   const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-   let degrees = (angle * 180 / Math.PI + 90 + 360) % 360;
-   let minutes = Math.round((degrees / 360) * 60 / 5) * 5;
-   if (minutes === 60) minutes = 0;
-
-   updateSlider(minutes);
-});
-
-// Touch events for mobile
-sliderHandle.addEventListener('touchstart', (e) => {
-   e.preventDefault();
-   isDragging = true;
-}, {
-   passive: false
-});
-
-document.addEventListener('touchend', () => {
-   isDragging = false;
-});
-
-document.addEventListener('touchmove', (e) => {
-   if (!isDragging) return;
-   e.preventDefault();
-
-   const touch = e.touches[0];
-   const rect = circularSlider.getBoundingClientRect();
-   const centerX = rect.left + rect.width / 2;
-   const centerY = rect.top + rect.height / 2;
-   const angle = Math.atan2(touch.clientY - centerY, touch.clientX - centerX);
-   let degrees = (angle * 180 / Math.PI + 90 + 360) % 360;
-   let minutes = Math.round((degrees / 360) * 60 / 5) * 5;
-   if (minutes === 60) minutes = 0;
-
-   updateSlider(minutes);
-}, {
-   passive: false
-});
-
-// Initialize slider on load
-window.addEventListener('load', () => {
-   updateSliderSize();
+   progressCircle.style.strokeDasharray = circumference;
    updateSlider(currentDuration);
-});
 
-// Update on resize
-window.addEventListener('resize', () => {
-   updateSliderSize();
-   updateSlider(currentDuration);
-});
+   function updateSliderSize() {
+      const sliderWidth = circularSlider.offsetWidth;
 
-// Auto-update chart
-setInterval(loadChartData, 10000);
-loadChartData();
+      if (sliderWidth <= 200) {
+         // Mobile size
+         radius = 75;
+         centerPoint = 90;
+      } else {
+         // Desktop size
+         radius = 85;
+         centerPoint = 110;
+      }
 
-// Loading animation
-document.addEventListener('DOMContentLoaded', () => {
+      circumference = 2 * Math.PI * radius;
+
+      // Update SVG dimensions
+      const svg = document.querySelector('.slider-svg');
+      const track = document.querySelector('.slider-track');
+      const progress = document.querySelector('.slider-progress');
+
+      // Update viewBox for responsive scaling
+      const viewBoxSize = centerPoint * 2;
+      svg.setAttribute('viewBox', `0 0 ${viewBoxSize} ${viewBoxSize}`);
+
+      // Update circle positions
+      track.setAttribute('cx', centerPoint);
+      track.setAttribute('cy', centerPoint);
+      track.setAttribute('r', radius);
+      progress.setAttribute('cx', centerPoint);
+      progress.setAttribute('cy', centerPoint);
+      progress.setAttribute('r', radius);
+
+      // Update marker positions for mobile
+      if (sliderWidth <= 200) {
+         document.querySelectorAll('.step-marker').forEach(marker => {
+            const text = marker.textContent;
+            switch (text) {
+               case '0':
+                  marker.style.top = '0px';
+                  marker.style.left = '90px';
+                  break;
+               case '5':
+                  marker.style.top = '12px';
+                  marker.style.right = '35px';
+                  break;
+               case '10':
+                  marker.style.top = '42px';
+                  marker.style.right = '0px';
+                  break;
+               case '15':
+                  marker.style.top = '90px';
+                  marker.style.right = '-8px';
+                  break;
+               case '20':
+                  marker.style.bottom = '38px';
+                  marker.style.right = '0px';
+                  break;
+               case '25':
+                  marker.style.bottom = '8px';
+                  marker.style.right = '35px';
+                  break;
+               case '30':
+                  marker.style.bottom = '-7px';
+                  marker.style.left = '90px';
+                  break;
+               case '35':
+                  marker.style.bottom = '8px';
+                  marker.style.left = '30px';
+                  break;
+               case '40':
+                  marker.style.bottom = '38px';
+                  marker.style.left = '0px';
+                  break;
+               case '45':
+                  marker.style.top = '90px';
+                  marker.style.left = '-8px';
+                  break;
+               case '50':
+                  marker.style.top = '42px';
+                  marker.style.left = '0px';
+                  break;
+               case '55':
+                  marker.style.top = '12px';
+                  marker.style.left = '30px';
+                  break;
+            }
+         });
+      } else {
+         // Reset to desktop positions
+         document.querySelectorAll('.step-marker').forEach(marker => {
+            const text = marker.textContent;
+            switch (text) {
+               case '0':
+                  marker.style.top = '0px';
+                  marker.style.left = '110px';
+                  break;
+               case '5':
+                  marker.style.top = '13px';
+                  marker.style.right = '37px';
+                  break;
+               case '10':
+                  marker.style.top = '55px';
+                  marker.style.right = '-5px';
+                  break;
+               case '15':
+                  marker.style.top = '112px';
+                  marker.style.right = '-22px';
+                  break;
+               case '20':
+                  marker.style.bottom = '35px';
+                  marker.style.right = '-7px';
+                  break;
+               case '25':
+                  marker.style.bottom = '-2px';
+                  marker.style.right = '32px';
+                  break;
+               case '30':
+                  marker.style.bottom = '-18px';
+                  marker.style.left = '110px';
+                  break;
+               case '35':
+                  marker.style.bottom = '-3px';
+                  marker.style.left = '52px';
+                  break;
+               case '40':
+                  marker.style.bottom = '40px';
+                  marker.style.left = '10px';
+                  break;
+               case '45':
+                  marker.style.top = '110px';
+                  marker.style.left = '-5px';
+                  break;
+               case '50':
+                  marker.style.top = '55px';
+                  marker.style.left = '10px';
+                  break;
+               case '55':
+                  marker.style.top = '15px';
+                  marker.style.left = '50px';
+                  break;
+            }
+         });
+      }
+
+      return {
+         radius,
+         centerPoint,
+         circumference
+      };
+   }
+
+   function updateSlider(minutes) {
+      currentDuration = Math.max(0, Math.min(60, minutes));
+      const {
+         radius,
+         centerPoint,
+         circumference
+      } = updateSliderSize();
+      const angle = (currentDuration / 60) * 360;
+      const radians = (angle - 90) * (Math.PI / 180);
+      sliderHandle.style.left = `${centerPoint + radius * Math.cos(radians)}px`;
+      sliderHandle.style.top = `${centerPoint + radius * Math.sin(radians)}px`;
+      progressCircle.style.strokeDashoffset = currentDuration === 0 ? circumference : circumference - (currentDuration / 60) * circumference;
+      durationValue.textContent = currentDuration;
+   }
+
+   ['mousedown', 'touchstart'].forEach(evt => sliderHandle.addEventListener(evt, e => {
+      e.preventDefault();
+      isDragging = true;
+      sliderHandle.style.cursor = 'grabbing';
+   }));
+   ['mouseup', 'touchend'].forEach(evt => document.addEventListener(evt, () => {
+      isDragging = false;
+      sliderHandle.style.cursor = 'grab';
+   }));
+
+   ['mousemove', 'touchmove'].forEach((evt, index) => {
+      document.addEventListener(evt, e => {
+         if (!isDragging) return;
+         e.preventDefault();
+         const client = index === 0 ? e : e.touches[0];
+         const rect = circularSlider.getBoundingClientRect();
+         const centerX = rect.left + rect.width / 2;
+         const centerY = rect.top + rect.height / 2;
+         const angle = Math.atan2(client.clientY - centerY, client.clientX - centerX);
+         let degrees = (angle * 180 / Math.PI + 90 + 360) % 360;
+         let minutes = Math.round((degrees / 360) * 60 / 5) * 5;
+         if (minutes === 60) minutes = 0;
+         updateSlider(minutes);
+      }, {
+         passive: false
+      });
+   });
+
+   window.addEventListener('load', () => {
+      updateSliderSize();
+      updateSlider(currentDuration);
+   });
+   window.addEventListener('resize', () => {
+      updateSliderSize();
+      updateSlider(currentDuration);
+   });
+
+   // ======= Auto-update chart every 10s =======
+   setInterval(loadChartData, 10000);
+   loadChartData();
+
+   // ======= Loading Animation =======
    const overlay = document.getElementById('loadingOverlay');
    const mainWrapper = document.querySelector('.main-wrapper');
    mainWrapper.style.opacity = 0;
@@ -412,4 +424,59 @@ document.addEventListener('DOMContentLoaded', () => {
          setTimeout(() => overlay.style.display = 'none', 300);
       }, 150);
    }, 1500);
+
+   // ======= Theme Toggle Click Handler =======
+   toggleBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      const isDark = document.body.classList.contains("dark");
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+      toggleBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+
+      // Update chart theme without affecting data
+      const themeOpts = {
+         legend: {
+            itemStyle: {
+               color: isDark ? '#e4e4e4' : '#333'
+            },
+            itemHoverStyle: {
+               color: isDark ? '#ffffff' : '#000000'
+            }
+         },
+         xAxis: {
+            labels: {
+               style: {
+                  color: isDark ? '#e4e4e4' : '#333'
+               }
+            },
+            lineColor: isDark ? '#444' : '#ddd',
+            tickColor: isDark ? '#444' : '#ddd'
+         },
+         yAxis: [{
+               labels: {
+                  style: {
+                     color: isDark ? '#7cb5ec' : 'rgb(100,149,237)'
+                  }
+               },
+               gridLineColor: isDark ? '#333' : '#eee'
+            },
+            {
+               labels: {
+                  style: {
+                     color: isDark ? '#f45b5b' : 'rgb(247,38,59)'
+                  }
+               },
+               gridLineColor: isDark ? '#333' : '#eee'
+            }
+         ]
+      };
+      chartH.update(themeOpts, true, false);
+      chartH.series[0].update({
+         color: isDark ? '#7cb5ec' : 'rgb(100,149,237)',
+         fillColor: isDark ? 'rgba(124,181,236,0.15)' : 'rgba(100,149,237,0.2)'
+      }, false);
+      chartH.series[1].update({
+         color: isDark ? '#f45b5b' : 'rgb(247,38,59)',
+         fillColor: isDark ? 'rgba(244,91,91,0.15)' : 'rgba(247,38,59,0.2)'
+      }, true);
+   });
 });
