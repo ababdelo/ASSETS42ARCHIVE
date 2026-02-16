@@ -44,33 +44,31 @@ document.addEventListener("DOMContentLoaded", () => {
             tickColor: isDark ? '#444' : '#ddd'
          },
          yAxis: [{
-               title: {
-                  text: ''
-               },
-               tickPositions: [0, 25, 50, 75, 100],
-               labels: {
-                  style: {
-                     color: isDark ? '#7cb5ec' : 'rgb(100,149,237)',
-                     fontWeight: 'bold'
-                  }
-               },
-               gridLineColor: isDark ? '#333' : '#eee'
+            title: {
+               text: ''
             },
-            {
-               title: {
-                  text: ''
-               },
-               tickPositions: [0, 10, 20, 30, 40],
-               opposite: true,
-               labels: {
-                  style: {
-                     color: isDark ? '#f45b5b' : 'rgb(247,38,59)',
-                     fontWeight: 'bold'
-                  }
-               },
-               gridLineColor: isDark ? '#333' : '#eee'
-            }
-         ],
+            tickPositions: [0, 25, 50, 75, 100],
+            labels: {
+               style: {
+                  color: isDark ? '#7cb5ec' : 'rgb(100,149,237)',
+                  fontWeight: 'bold'
+               }
+            },
+            gridLineColor: isDark ? '#333' : '#eee'
+         }, {
+            title: {
+               text: ''
+            },
+            tickPositions: [0, 10, 20, 30, 40],
+            opposite: true,
+            labels: {
+               style: {
+                  color: isDark ? '#f45b5b' : 'rgb(247,38,59)',
+                  fontWeight: 'bold'
+               }
+            },
+            gridLineColor: isDark ? '#333' : '#eee'
+         }],
          plotOptions: {
             spline: {
                lineWidth: 2,
@@ -80,20 +78,18 @@ document.addEventListener("DOMContentLoaded", () => {
             }
          },
          series: [{
-               name: 'Soil Moisture',
-               data: [],
-               yAxis: 0,
-               color: isDark ? '#7cb5ec' : 'rgb(100,149,237)',
-               fillColor: isDark ? 'rgba(124,181,236,0.15)' : 'rgba(100,149,237,0.2)'
-            },
-            {
-               name: 'Temperature',
-               data: [],
-               yAxis: 1,
-               color: isDark ? '#f45b5b' : 'rgb(247,38,59)',
-               fillColor: isDark ? 'rgba(244,91,91,0.15)' : 'rgba(247,38,59,0.2)'
-            }
-         ],
+            name: 'Soil Moisture',
+            data: [],
+            yAxis: 0,
+            color: isDark ? '#7cb5ec' : 'rgb(100,149,237)',
+            fillColor: isDark ? 'rgba(124,181,236,0.15)' : 'rgba(100,149,237,0.2)'
+         }, {
+            name: 'Temperature',
+            data: [],
+            yAxis: 1,
+            color: isDark ? '#f45b5b' : 'rgb(247,38,59)',
+            fillColor: isDark ? 'rgba(244,91,91,0.15)' : 'rgba(247,38,59,0.2)'
+         }],
          credits: {
             enabled: false
          }
@@ -111,6 +107,14 @@ document.addEventListener("DOMContentLoaded", () => {
    ws.onmessage = e => {
       try {
          const d = JSON.parse(e.data);
+
+         // Handle schedule updates from other clients
+         if (d.type === 'schedules') {
+            displaySchedules(d.schedules, d.currentHour, d.currentMinute);
+            return;
+         }
+
+         // Handle sensor data updates
          latestSensorData = d;
 
          if (d.temperature >= 0) document.getElementById('temperatureValue').textContent = `${d.temperature} °C`;
@@ -125,17 +129,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
          if (d.pumpStatus === 'ON') {
             span.textContent = 'ON';
-            // Show watering mode if available
             let modeText = '';
             if (d.wateringMode === 'manual') modeText = ' (Manual)';
             else if (d.wateringMode === 'scheduled') modeText = ' (Scheduled)';
             else if (d.wateringMode === 'auto') modeText = ' (Auto)';
-
             btn.innerHTML = `<i class="fas fa-tint"></i> Watering${d.countdown > 0 ? ` (${d.countdown}s)` : ''}${modeText}`;
             btn.disabled = true;
          } else if (isOver) {
             btn.innerHTML = `<i class="fas fa-tint"></i> Water Plant`;
-            btn.disabled = true;
+            btn.disabled = false; // Allow manual override
             span.textContent = 'OFF';
          } else {
             span.textContent = 'OFF';
@@ -185,22 +187,23 @@ document.addEventListener("DOMContentLoaded", () => {
    // ======= Water Plant API =======
    async function waterPlant() {
       try {
-         const duration = currentDuration || 5; // Use slider duration
+         const duration = currentDuration || 5;
          const res = await fetch(`/water?time=${duration}&token=${API_KEY}`);
          if (!res.ok) throw new Error(res.statusText);
          document.getElementById('wateringValue').textContent = 'ON';
          const btn = document.getElementById('waterButton');
          btn.innerHTML = `<i class="fas fa-tint"></i> Watering`;
          btn.disabled = true;
+         showNotification(`Watering for ${duration} min`, 'success');
       } catch (err) {
          console.error('Water API error', err);
+         showNotification('Failed to start watering', 'error');
       }
    }
    document.getElementById('waterButton').addEventListener('click', waterPlant);
 
    // ======= Schedule Functions =======
 
-   // Convert 12h to 24h format
    function to24Hour(hour, meridian) {
       let h = parseInt(hour);
       if (meridian === 'PM' && h !== 12) h += 12;
@@ -208,7 +211,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return h;
    }
 
-   // Convert 24h to 12h format  
    function to12Hour(hour) {
       let h = hour % 12;
       if (h === 0) h = 12;
@@ -219,7 +221,6 @@ document.addEventListener("DOMContentLoaded", () => {
       };
    }
 
-   // Load and display schedules
    async function loadSchedules() {
       try {
          const response = await fetch(`/api/schedules?token=${API_KEY}`);
@@ -231,7 +232,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
    }
 
-   // Display schedules in the list (improved UI)
    function displaySchedules(schedules, currentHour, currentMinute) {
       const list = document.getElementById('scheduleList');
       if (!list) return;
@@ -250,26 +250,31 @@ document.addEventListener("DOMContentLoaded", () => {
             meridian
          } = to12Hour(s.hour);
 
-         // Determine if today or tomorrow
          let dayLabel = '';
          if (currentHour !== undefined) {
             const isAhead = s.hour > currentHour || (s.hour === currentHour && s.minute > currentMinute);
-            dayLabel = s.triggered ? '✓ Done' : (isAhead ? 'Today' : 'Tomorrow');
+            dayLabel = s.triggered ? 'Done' : (isAhead ? 'Today' : 'Tomorrow');
          }
+
+         const repeatIcon = s.repeat ?
+            '<i class="fas fa-sync-alt" title="Repeats daily"></i>' :
+            '<i class="fas fa-clock" title="One-time"></i>';
 
          const div = document.createElement('div');
          div.className = 'schedule-item' + (s.triggered ? ' triggered' : '');
          div.innerHTML = `
-         <div class="schedule-info">
-            <span class="schedule-time">${hour}:${String(s.minute).padStart(2, '0')} ${meridian}</span>
-            <span class="schedule-meta">${s.duration}min · ${dayLabel}</span>
-         </div>
-         <button class="schedule-delete" data-id="${s.id}" title="Delete"><i class="fas fa-times"></i></button>
-      `;
+            <div class="schedule-info">
+               <div class="schedule-time-row">
+                  <span class="schedule-time">${hour}:${String(s.minute).padStart(2, '0')} ${meridian}</span>
+                  <span class="schedule-repeat">${repeatIcon}</span>
+               </div>
+               <span class="schedule-meta">${s.duration} min · ${dayLabel}</span>
+            </div>
+            <button class="schedule-delete" data-id="${s.id}" title="Delete"><i class="fas fa-trash"></i></button>
+         `;
          list.appendChild(div);
       });
 
-      // Add delete handlers
       list.querySelectorAll('.schedule-delete').forEach(btn => {
          btn.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -278,6 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
                await fetch(`/api/schedule?token=${API_KEY}&id=${id}`, {
                   method: 'DELETE'
                });
+               showNotification('Schedule deleted', 'info');
                loadSchedules();
             } catch (err) {
                console.error('Failed to delete schedule:', err);
@@ -286,17 +292,18 @@ document.addEventListener("DOMContentLoaded", () => {
       });
    }
 
-   // Set a new schedule
    async function setSchedule() {
       const hourSelect = document.getElementById('hourSelect');
       const meridianSelect = document.getElementById('meridianSelect');
       const durationVal = document.getElementById('durationValue');
+      const repeatCheckbox = document.getElementById('repeatSchedule');
 
       if (!hourSelect || !meridianSelect || !durationVal) return;
 
       const hour = to24Hour(hourSelect.value, meridianSelect.value);
       const minute = 0;
       const duration = parseInt(durationVal.textContent) || 15;
+      const repeat = repeatCheckbox ? repeatCheckbox.checked : true;
 
       try {
          const params = new URLSearchParams({
@@ -304,7 +311,8 @@ document.addEventListener("DOMContentLoaded", () => {
             hour: hour,
             minute: minute,
             duration: duration,
-            enabled: 'true'
+            enabled: 'true',
+            repeat: repeat ? 'true' : 'false'
          });
 
          const response = await fetch(`/api/schedule?${params}`, {
@@ -317,8 +325,9 @@ document.addEventListener("DOMContentLoaded", () => {
                hour: h12,
                meridian
             } = to12Hour(hour);
-            const dayStr = data.triggersToday ? 'today' : 'tomorrow';
-            showNotification(`${h12}:00 ${meridian} ${dayStr} (${duration}min)`, 'success');
+            const dayStr = data.triggersToday ? 'Today' : 'Tomorrow';
+            const repeatStr = repeat ? '🔄' : '⏱️';
+            showNotification(`${repeatStr} ${h12}:00 ${meridian} · ${dayStr} · ${duration}min`, 'success');
             loadSchedules();
          } else {
             showNotification(data.error || 'Failed to set schedule', 'error');
@@ -329,9 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
    }
 
-   // Simple notification function
    function showNotification(message, type = 'info') {
-      // Remove existing notification
       const existing = document.querySelector('.sai-notification');
       if (existing) existing.remove();
 
@@ -340,26 +347,19 @@ document.addEventListener("DOMContentLoaded", () => {
       div.textContent = message;
       document.body.appendChild(div);
 
-      // Animate in
       setTimeout(() => div.classList.add('show'), 10);
-
-      // Remove after 3s
       setTimeout(() => {
          div.classList.remove('show');
          setTimeout(() => div.remove(), 300);
       }, 3000);
    }
 
-   // Initialize schedule button
    const setScheduleBtn = document.getElementById('setScheduleBtn');
    if (setScheduleBtn) {
       setScheduleBtn.addEventListener('click', setSchedule);
    }
 
-   // Load schedules on page load
    loadSchedules();
-
-   // Refresh schedules periodically (every 30s)
    setInterval(loadSchedules, 30000);
 
    // ======= Circular Slider Logic =======
@@ -381,27 +381,22 @@ document.addEventListener("DOMContentLoaded", () => {
       const sliderWidth = circularSlider.offsetWidth;
 
       if (sliderWidth <= 200) {
-         // Mobile size
          radius = 75;
          centerPoint = 90;
       } else {
-         // Desktop size
          radius = 85;
          centerPoint = 110;
       }
 
       circumference = 2 * Math.PI * radius;
 
-      // Update SVG dimensions
       const svg = document.querySelector('.slider-svg');
       const track = document.querySelector('.slider-track');
       const progress = document.querySelector('.slider-progress');
 
-      // Update viewBox for responsive scaling
       const viewBoxSize = centerPoint * 2;
       svg.setAttribute('viewBox', `0 0 ${viewBoxSize} ${viewBoxSize}`);
 
-      // Update circle positions
       track.setAttribute('cx', centerPoint);
       track.setAttribute('cy', centerPoint);
       track.setAttribute('r', radius);
@@ -409,7 +404,6 @@ document.addEventListener("DOMContentLoaded", () => {
       progress.setAttribute('cy', centerPoint);
       progress.setAttribute('r', radius);
 
-      // Update marker positions for mobile
       if (sliderWidth <= 200) {
          document.querySelectorAll('.step-marker').forEach(marker => {
             const text = marker.textContent;
@@ -465,7 +459,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
          });
       } else {
-         // Reset to desktop positions
          document.querySelectorAll('.step-marker').forEach(marker => {
             const text = marker.textContent;
             switch (text) {
@@ -548,6 +541,7 @@ document.addEventListener("DOMContentLoaded", () => {
       isDragging = true;
       sliderHandle.style.cursor = 'grabbing';
    }));
+
    ['mouseup', 'touchend'].forEach(evt => document.addEventListener(evt, () => {
       isDragging = false;
       sliderHandle.style.cursor = 'grab';
@@ -596,14 +590,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }, 150);
    }, 1500);
 
-   // ======= Theme Toggle Click Handler =======
+   // ======= Theme Toggle =======
    toggleBtn.addEventListener("click", () => {
       document.body.classList.toggle("dark");
       const isDark = document.body.classList.contains("dark");
       localStorage.setItem("theme", isDark ? "dark" : "light");
       toggleBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
 
-      // Update chart theme without affecting data
       const themeOpts = {
          legend: {
             itemStyle: {
@@ -623,22 +616,20 @@ document.addEventListener("DOMContentLoaded", () => {
             tickColor: isDark ? '#444' : '#ddd'
          },
          yAxis: [{
-               labels: {
-                  style: {
-                     color: isDark ? '#7cb5ec' : 'rgb(100,149,237)'
-                  }
-               },
-               gridLineColor: isDark ? '#333' : '#eee'
+            labels: {
+               style: {
+                  color: isDark ? '#7cb5ec' : 'rgb(100,149,237)'
+               }
             },
-            {
-               labels: {
-                  style: {
-                     color: isDark ? '#f45b5b' : 'rgb(247,38,59)'
-                  }
-               },
-               gridLineColor: isDark ? '#333' : '#eee'
-            }
-         ]
+            gridLineColor: isDark ? '#333' : '#eee'
+         }, {
+            labels: {
+               style: {
+                  color: isDark ? '#f45b5b' : 'rgb(247,38,59)'
+               }
+            },
+            gridLineColor: isDark ? '#333' : '#eee'
+         }]
       };
       chartH.update(themeOpts, true, false);
       chartH.series[0].update({
