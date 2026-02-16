@@ -208,7 +208,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return h;
    }
 
-   // Convert 24h to 12h format
+   // Convert 24h to 12h format  
    function to12Hour(hour) {
       let h = hour % 12;
       if (h === 0) h = 12;
@@ -219,28 +219,20 @@ document.addEventListener("DOMContentLoaded", () => {
       };
    }
 
-   // Find next available schedule slot
-   function findNextSlot(schedules) {
-      for (let i = 0; i < schedules.length; i++) {
-         if (!schedules[i].enabled) return i;
-      }
-      return 0; // Overwrite first if all full
-   }
-
    // Load and display schedules
    async function loadSchedules() {
       try {
          const response = await fetch(`/api/schedules?token=${API_KEY}`);
          if (!response.ok) return;
          const data = await response.json();
-         displaySchedules(data.schedules);
+         displaySchedules(data.schedules, data.currentHour, data.currentMinute);
       } catch (e) {
          console.error('Failed to load schedules:', e);
       }
    }
 
-   // Display schedules in the list
-   function displaySchedules(schedules) {
+   // Display schedules in the list (improved UI)
+   function displaySchedules(schedules, currentHour, currentMinute) {
       const list = document.getElementById('scheduleList');
       if (!list) return;
 
@@ -248,7 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const enabled = schedules.filter(s => s.enabled);
 
       if (enabled.length === 0) {
-         list.innerHTML = '<div class="no-schedules">No active schedules</div>';
+         list.innerHTML = '<div class="no-schedules">No schedules set</div>';
          return;
       }
 
@@ -257,13 +249,23 @@ document.addEventListener("DOMContentLoaded", () => {
             hour,
             meridian
          } = to12Hour(s.hour);
+
+         // Determine if today or tomorrow
+         let dayLabel = '';
+         if (currentHour !== undefined) {
+            const isAhead = s.hour > currentHour || (s.hour === currentHour && s.minute > currentMinute);
+            dayLabel = s.triggered ? '✓ Done' : (isAhead ? 'Today' : 'Tomorrow');
+         }
+
          const div = document.createElement('div');
          div.className = 'schedule-item' + (s.triggered ? ' triggered' : '');
          div.innerHTML = `
+         <div class="schedule-info">
             <span class="schedule-time">${hour}:${String(s.minute).padStart(2, '0')} ${meridian}</span>
-            <span class="schedule-duration">${s.duration} min</span>
-            <button class="schedule-delete" data-id="${s.id}"><i class="fas fa-times"></i></button>
-         `;
+            <span class="schedule-meta">${s.duration}min · ${dayLabel}</span>
+         </div>
+         <button class="schedule-delete" data-id="${s.id}" title="Delete"><i class="fas fa-times"></i></button>
+      `;
          list.appendChild(div);
       });
 
@@ -293,25 +295,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!hourSelect || !meridianSelect || !durationVal) return;
 
       const hour = to24Hour(hourSelect.value, meridianSelect.value);
-      const minute = 0; // Schedule on the hour
+      const minute = 0;
       const duration = parseInt(durationVal.textContent) || 15;
-
-      // First get current schedules to find available slot
-      let slotId = 0;
-      try {
-         const res = await fetch(`/api/schedules?token=${API_KEY}`);
-         if (res.ok) {
-            const data = await res.json();
-            slotId = findNextSlot(data.schedules);
-         }
-      } catch (e) {
-         console.error('Failed to get schedules:', e);
-      }
 
       try {
          const params = new URLSearchParams({
             token: API_KEY,
-            id: slotId,
             hour: hour,
             minute: minute,
             duration: duration,
@@ -321,13 +310,18 @@ document.addEventListener("DOMContentLoaded", () => {
          const response = await fetch(`/api/schedule?${params}`, {
             method: 'POST'
          });
-         if (response.ok) {
-            const timeStr = `${hourSelect.value}:00 ${meridianSelect.value}`;
-            showNotification(`Schedule set for ${timeStr} (${duration} min)`, 'success');
+         const data = await response.json();
+
+         if (response.ok && data.success) {
+            const {
+               hour: h12,
+               meridian
+            } = to12Hour(hour);
+            const dayStr = data.triggersToday ? 'today' : 'tomorrow';
+            showNotification(`${h12}:00 ${meridian} ${dayStr} (${duration}min)`, 'success');
             loadSchedules();
          } else {
-            const data = await response.json();
-            showNotification('Failed: ' + (data.error || 'Unknown error'), 'error');
+            showNotification(data.error || 'Failed to set schedule', 'error');
          }
       } catch (e) {
          console.error('Failed to set schedule:', e);
