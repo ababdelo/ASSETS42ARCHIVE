@@ -133,11 +133,12 @@ document.addEventListener("DOMContentLoaded", () => {
             if (d.wateringMode === 'manual') modeText = ' (Manual)';
             else if (d.wateringMode === 'scheduled') modeText = ' (Scheduled)';
             else if (d.wateringMode === 'auto') modeText = ' (Auto)';
-            btn.innerHTML = `<i class="fas fa-tint"></i> Watering${d.countdown > 0 ? ` (${d.countdown}s)` : ''}${modeText}`;
+            const countdownStr = d.countdown > 0 ? ` (${formatCountdown(d.countdown)})` : '';
+            btn.innerHTML = `<i class="fas fa-tint"></i> Watering${countdownStr}${modeText}`;
             btn.disabled = true;
          } else if (isOver) {
             btn.innerHTML = `<i class="fas fa-tint"></i> Water Plant`;
-            btn.disabled = false; // Allow manual override
+            btn.disabled = true;
             span.textContent = 'OFF';
          } else {
             span.textContent = 'OFF';
@@ -186,6 +187,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
    // ======= Water Plant API =======
    async function waterPlant() {
+      // Block watering if overwatered
+      if (latestSensorData && (latestSensorData.plantStatus || '').toLowerCase() === 'overwatered') {
+         showNotification('<i class="fas fa-exclamation-triangle"></i> Cannot water - plant is overwatered', 'error');
+         return;
+      }
+
       try {
          const duration = currentDuration || 5;
          const res = await fetch(`/water?time=${duration}&token=${API_KEY}`);
@@ -194,10 +201,10 @@ document.addEventListener("DOMContentLoaded", () => {
          const btn = document.getElementById('waterButton');
          btn.innerHTML = `<i class="fas fa-tint"></i> Watering`;
          btn.disabled = true;
-         showNotification(`Watering for ${duration} min`, 'success');
+         showNotification(`<i class="fas fa-tint"></i> Watering for ${duration}s`, 'success');
       } catch (err) {
          console.error('Water API error', err);
-         showNotification('Failed to start watering', 'error');
+         showNotification('<i class="fas fa-times-circle"></i> Failed to start watering', 'error');
       }
    }
    document.getElementById('waterButton').addEventListener('click', waterPlant);
@@ -221,6 +228,14 @@ document.addEventListener("DOMContentLoaded", () => {
       };
    }
 
+   // Format seconds as m:ss or just Xs for short durations
+   function formatCountdown(seconds) {
+      if (seconds < 60) return `${seconds}s`;
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${String(secs).padStart(2, '0')}`;
+   }
+
    async function loadSchedules() {
       try {
          const response = await fetch(`/api/schedules?token=${API_KEY}`);
@@ -239,21 +254,53 @@ document.addEventListener("DOMContentLoaded", () => {
       list.innerHTML = '';
       const enabled = schedules.filter(s => s.enabled);
 
-      if (enabled.length === 0) {
+      // Check if we're currently in scheduled watering
+      const isScheduledWatering = latestSensorData &&
+         latestSensorData.pumpStatus === 'ON' &&
+         latestSensorData.wateringMode === 'scheduled';
+
+      // Filter out one-time schedules that are done (triggered but not ongoing)
+      const visibleSchedules = enabled.filter(s => {
+         // If it's a repeating schedule, always show it
+         if (s.repeat) return true;
+         // If it's not triggered yet, show it
+         if (!s.triggered) return true;
+         // If it's currently ongoing (one-time and watering now), show it
+         if (s.triggered && isScheduledWatering) return true;
+         // One-time schedule that's done (triggered but not ongoing) - hide it
+         return false;
+      });
+
+      if (visibleSchedules.length === 0) {
          list.innerHTML = '<div class="no-schedules">No schedules set</div>';
          return;
       }
 
-      enabled.forEach(s => {
+      visibleSchedules.forEach(s => {
          const {
             hour,
             meridian
          } = to12Hour(s.hour);
 
          let dayLabel = '';
+         let statusClass = '';
+
          if (currentHour !== undefined) {
             const isAhead = s.hour > currentHour || (s.hour === currentHour && s.minute > currentMinute);
-            dayLabel = s.triggered ? 'Done' : (isAhead ? 'Today' : 'Tomorrow');
+
+            if (s.triggered) {
+               if (isScheduledWatering) {
+                  dayLabel = 'Ongoing';
+                  statusClass = ' ongoing';
+               } else if (s.skipped) {
+                  dayLabel = 'Skipped';
+                  statusClass = ' skipped';
+               } else {
+                  dayLabel = 'Done';
+               }
+            } else {
+               dayLabel = isAhead ? 'Today' : 'Tomorrow';
+            }
          }
 
          const repeatIcon = s.repeat ?
@@ -261,7 +308,7 @@ document.addEventListener("DOMContentLoaded", () => {
             '<i class="fas fa-clock" title="One-time"></i>';
 
          const div = document.createElement('div');
-         div.className = 'schedule-item' + (s.triggered ? ' triggered' : '');
+         div.className = 'schedule-item' + (s.triggered ? ' triggered' : '') + statusClass;
          div.innerHTML = `
             <div class="schedule-info">
                <div class="schedule-time-row">
@@ -283,7 +330,7 @@ document.addEventListener("DOMContentLoaded", () => {
                await fetch(`/api/schedule?token=${API_KEY}&id=${id}`, {
                   method: 'DELETE'
                });
-               showNotification('Schedule deleted', 'info');
+               showNotification('<i class="fas fa-trash"></i> Schedule deleted', 'info');
                loadSchedules();
             } catch (err) {
                console.error('Failed to delete schedule:', err);
@@ -337,7 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
          }
       } catch (e) {
          console.error('Failed to set schedule:', e);
-         showNotification('Failed to set schedule', 'error');
+         showNotification('<i class="fas fa-times-circle"></i> Failed to set schedule', 'error');
       }
    }
 
@@ -523,6 +570,47 @@ document.addEventListener("DOMContentLoaded", () => {
          circumference
       };
    }
+
+   // ======= Music Toggle =======
+   const musicToggle = document.getElementById('musicToggle');
+   const bgMusic = document.getElementById('bgMusic');
+   let musicWasPlaying = false;
+
+   // Restore music state
+   const musicEnabled = localStorage.getItem('musicEnabled') === 'true';
+   if (musicEnabled && bgMusic) {
+      bgMusic.play().catch(() => {});
+      musicToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+      musicToggle.classList.add('playing');
+   }
+
+   musicToggle.addEventListener('click', () => {
+      if (bgMusic.paused) {
+         bgMusic.play();
+         musicToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+         musicToggle.classList.add('playing');
+         localStorage.setItem('musicEnabled', 'true');
+      } else {
+         bgMusic.pause();
+         musicToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
+         musicToggle.classList.remove('playing');
+         localStorage.setItem('musicEnabled', 'false');
+      }
+   });
+
+   // Pause music when tab/window is not visible, resume when visible
+   document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+         musicWasPlaying = !bgMusic.paused;
+         if (musicWasPlaying) {
+            bgMusic.pause();
+         }
+      } else {
+         if (musicWasPlaying && localStorage.getItem('musicEnabled') === 'true') {
+            bgMusic.play().catch(() => {});
+         }
+      }
+   });
 
    function updateSlider(minutes) {
       currentDuration = Math.max(0, Math.min(60, minutes));

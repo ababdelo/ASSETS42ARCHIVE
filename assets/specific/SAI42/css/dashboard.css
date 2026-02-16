@@ -148,6 +148,38 @@ body {
 }
 
 /* =========================
+   Music Toggle
+========================= */
+.music-toggle {
+   position: fixed;
+   right: 20px;
+   top: 145px;
+   z-index: 1200;
+   background: var(--bg-surface);
+   border: 2px solid var(--border-light);
+   border-radius: 50%;
+   width: 48px;
+   height: 48px;
+   font-size: 1.3rem;
+   cursor: pointer;
+   color: var(--text-primary);
+   box-shadow: var(--shadow-main);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.music-toggle:hover {
+   transform: scale(1.1);
+}
+
+.music-toggle.playing {
+   color: var(--accent);
+   border-color: var(--accent);
+}
+
+/* =========================
    LOADING OVERLAY
 ========================= */
 
@@ -278,6 +310,7 @@ body {
 
 .info-block {
    flex: 3 1 280px;
+   margin-top: 15px;
    display: flex;
    flex-direction: column;
    justify-content: center;
@@ -585,6 +618,22 @@ body {
    border-left-color: #4CAF50;
 }
 
+.schedule-item.ongoing {
+   opacity: 1;
+   border-left-color: #FF9800;
+   animation: pulse 1.5s ease-in-out infinite;
+}
+
+.schedule-item.skipped {
+   opacity: 0.6;
+   border-left-color: #9E9E9E;
+}
+
+@keyframes pulse {
+   0%, 100% { background: var(--bg-muted); }
+   50% { background: var(--accent-soft); }
+}
+
 .schedule-info {
    display: flex;
    flex-direction: column;
@@ -716,13 +765,12 @@ body {
 ========================= */
 
 .manual-section {
-   text-align: center;
-   margin-top: 24px;
-}
-
-.manual-text {
-   margin-bottom: 15px;
-   color: var(--text-secondary);
+   width: 100%;
+   display: flex;
+   justify-content: center;
+   margin-top: 16px;
+   padding-top: 12px;
+   border-top: 1px dashed var(--border-dashed);
 }
 
 .water-btn {
@@ -795,6 +843,10 @@ body {
 
    #sensors-chart {
       height: 250px;
+   }
+
+   .music-toggle {
+      top: 155px;
    }
 }
 
