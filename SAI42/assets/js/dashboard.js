@@ -326,8 +326,9 @@ document.addEventListener("DOMContentLoaded", () => {
                meridian
             } = to12Hour(hour);
             const dayStr = data.triggersToday ? 'Today' : 'Tomorrow';
-            const repeatStr = repeat ? '🔄' : '⏱️';
-            showNotification(`${repeatStr} ${h12}:00 ${meridian} · ${dayStr} · ${duration}min`, 'success');
+            const repeatIcon = repeat ? '<i class="fas fa-sync-alt"></i>' : '<i class="fas fa-clock"></i>';
+            const notifType = data.isUpdate ? 'info' : 'success';
+            showNotification(`${repeatIcon} ${h12}:00 ${meridian} · ${dayStr} · ${duration}min`, notifType);
             loadSchedules();
          } else {
             showNotification(data.error || 'Failed to set schedule', 'error');
