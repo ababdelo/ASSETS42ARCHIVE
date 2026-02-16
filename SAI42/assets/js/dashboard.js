@@ -294,14 +294,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
    async function setSchedule() {
       const hourSelect = document.getElementById('hourSelect');
+      const minuteSelect = document.getElementById('minuteSelect');
       const meridianSelect = document.getElementById('meridianSelect');
       const durationVal = document.getElementById('durationValue');
       const repeatCheckbox = document.getElementById('repeatSchedule');
 
-      if (!hourSelect || !meridianSelect || !durationVal) return;
+      if (!hourSelect || !minuteSelect || !meridianSelect || !durationVal) return;
 
       const hour = to24Hour(hourSelect.value, meridianSelect.value);
-      const minute = 0;
+      const minute = parseInt(minuteSelect.value) || 0;
       const duration = parseInt(durationVal.textContent) || 15;
       const repeat = repeatCheckbox ? repeatCheckbox.checked : true;
 
@@ -328,7 +329,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const dayStr = data.triggersToday ? 'Today' : 'Tomorrow';
             const repeatIcon = repeat ? '<i class="fas fa-sync-alt"></i>' : '<i class="fas fa-clock"></i>';
             const notifType = data.isUpdate ? 'info' : 'success';
-            showNotification(`${repeatIcon} ${h12}:00 ${meridian} · ${dayStr} · ${duration}min`, notifType);
+            const minStr = String(minute).padStart(2, '0');
+            showNotification(`${repeatIcon} ${h12}:${minStr} ${meridian} · ${dayStr} · ${duration}min`, notifType);
             loadSchedules();
          } else {
             showNotification(data.error || 'Failed to set schedule', 'error');
