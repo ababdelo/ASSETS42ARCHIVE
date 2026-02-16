@@ -138,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.disabled = true;
          } else if (isOver) {
             btn.innerHTML = `<i class="fas fa-tint"></i> Water Plant`;
-            btn.disabled = true; // Disable on overwatered
+            btn.disabled = true;
             span.textContent = 'OFF';
          } else {
             span.textContent = 'OFF';
@@ -187,6 +187,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
    // ======= Water Plant API =======
    async function waterPlant() {
+      // Block watering if overwatered
+      if (latestSensorData && (latestSensorData.plantStatus || '').toLowerCase() === 'overwatered') {
+         showNotification('<i class="fas fa-exclamation-triangle"></i> Cannot water - plant is overwatered', 'error');
+         return;
+      }
+
       try {
          const duration = currentDuration || 5;
          const res = await fetch(`/water?time=${duration}&token=${API_KEY}`);
@@ -195,10 +201,10 @@ document.addEventListener("DOMContentLoaded", () => {
          const btn = document.getElementById('waterButton');
          btn.innerHTML = `<i class="fas fa-tint"></i> Watering`;
          btn.disabled = true;
-         showNotification(`Watering for ${duration}s`, 'success');
+         showNotification(`<i class="fas fa-tint"></i> Watering for ${duration}s`, 'success');
       } catch (err) {
          console.error('Water API error', err);
-         showNotification('Failed to start watering', 'error');
+         showNotification('<i class="fas fa-times-circle"></i> Failed to start watering', 'error');
       }
    }
    document.getElementById('waterButton').addEventListener('click', waterPlant);
@@ -312,7 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
                await fetch(`/api/schedule?token=${API_KEY}&id=${id}`, {
                   method: 'DELETE'
                });
-               showNotification('Schedule deleted', 'info');
+               showNotification('<i class="fas fa-trash"></i> Schedule deleted', 'info');
                loadSchedules();
             } catch (err) {
                console.error('Failed to delete schedule:', err);
@@ -366,7 +372,7 @@ document.addEventListener("DOMContentLoaded", () => {
          }
       } catch (e) {
          console.error('Failed to set schedule:', e);
-         showNotification('Failed to set schedule', 'error');
+         showNotification('<i class="fas fa-times-circle"></i> Failed to set schedule', 'error');
       }
    }
 
@@ -556,7 +562,7 @@ document.addEventListener("DOMContentLoaded", () => {
    // ======= Music Toggle =======
    const musicToggle = document.getElementById('musicToggle');
    const bgMusic = document.getElementById('bgMusic');
-   let musicWasPlaying = false; // Track if music was playing before tab switch
+   let musicWasPlaying = false;
 
    // Restore music state
    const musicEnabled = localStorage.getItem('musicEnabled') === 'true';
@@ -583,13 +589,11 @@ document.addEventListener("DOMContentLoaded", () => {
    // Pause music when tab/window is not visible, resume when visible
    document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
-         // Tab became hidden - remember if music was playing and pause
          musicWasPlaying = !bgMusic.paused;
          if (musicWasPlaying) {
             bgMusic.pause();
          }
       } else {
-         // Tab became visible - resume if it was playing before
          if (musicWasPlaying && localStorage.getItem('musicEnabled') === 'true') {
             bgMusic.play().catch(() => {});
          }
