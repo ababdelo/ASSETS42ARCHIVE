@@ -254,17 +254,29 @@ document.addEventListener("DOMContentLoaded", () => {
       list.innerHTML = '';
       const enabled = schedules.filter(s => s.enabled);
 
-      if (enabled.length === 0) {
-         list.innerHTML = '<div class="no-schedules">No schedules set</div>';
-         return;
-      }
-
       // Check if we're currently in scheduled watering
       const isScheduledWatering = latestSensorData &&
          latestSensorData.pumpStatus === 'ON' &&
          latestSensorData.wateringMode === 'scheduled';
 
-      enabled.forEach(s => {
+      // Filter out one-time schedules that are done (triggered but not ongoing)
+      const visibleSchedules = enabled.filter(s => {
+         // If it's a repeating schedule, always show it
+         if (s.repeat) return true;
+         // If it's not triggered yet, show it
+         if (!s.triggered) return true;
+         // If it's currently ongoing (one-time and watering now), show it
+         if (s.triggered && isScheduledWatering) return true;
+         // One-time schedule that's done (triggered but not ongoing) - hide it
+         return false;
+      });
+
+      if (visibleSchedules.length === 0) {
+         list.innerHTML = '<div class="no-schedules">No schedules set</div>';
+         return;
+      }
+
+      visibleSchedules.forEach(s => {
          const {
             hour,
             meridian
