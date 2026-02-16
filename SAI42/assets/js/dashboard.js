@@ -524,6 +524,32 @@ document.addEventListener("DOMContentLoaded", () => {
       };
    }
 
+   // ======= Music Toggle =======
+   const musicToggle = document.getElementById('musicToggle');
+   const bgMusic = document.getElementById('bgMusic');
+
+   // Restore music state
+   const musicEnabled = localStorage.getItem('musicEnabled') === 'true';
+   if (musicEnabled && bgMusic) {
+      bgMusic.play().catch(() => {}); // May fail due to autoplay policy
+      musicToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+      musicToggle.classList.add('playing');
+   }
+
+   musicToggle.addEventListener('click', () => {
+      if (bgMusic.paused) {
+         bgMusic.play();
+         musicToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+         musicToggle.classList.add('playing');
+         localStorage.setItem('musicEnabled', 'true');
+      } else {
+         bgMusic.pause();
+         musicToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
+         musicToggle.classList.remove('playing');
+         localStorage.setItem('musicEnabled', 'false');
+      }
+   });
+
    function updateSlider(minutes) {
       currentDuration = Math.max(0, Math.min(60, minutes));
       const {
