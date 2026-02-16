@@ -527,11 +527,12 @@ document.addEventListener("DOMContentLoaded", () => {
    // ======= Music Toggle =======
    const musicToggle = document.getElementById('musicToggle');
    const bgMusic = document.getElementById('bgMusic');
+   let musicWasPlaying = false; // Track if music was playing before tab switch
 
    // Restore music state
    const musicEnabled = localStorage.getItem('musicEnabled') === 'true';
    if (musicEnabled && bgMusic) {
-      bgMusic.play().catch(() => {}); // May fail due to autoplay policy
+      bgMusic.play().catch(() => {});
       musicToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
       musicToggle.classList.add('playing');
    }
@@ -547,6 +548,22 @@ document.addEventListener("DOMContentLoaded", () => {
          musicToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
          musicToggle.classList.remove('playing');
          localStorage.setItem('musicEnabled', 'false');
+      }
+   });
+
+   // Pause music when tab/window is not visible, resume when visible
+   document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+         // Tab became hidden - remember if music was playing and pause
+         musicWasPlaying = !bgMusic.paused;
+         if (musicWasPlaying) {
+            bgMusic.pause();
+         }
+      } else {
+         // Tab became visible - resume if it was playing before
+         if (musicWasPlaying && localStorage.getItem('musicEnabled') === 'true') {
+            bgMusic.play().catch(() => {});
+         }
       }
    });
 
