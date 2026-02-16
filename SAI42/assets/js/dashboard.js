@@ -125,7 +125,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
          if (d.pumpStatus === 'ON') {
             span.textContent = 'ON';
-            btn.innerHTML = `<i class="fas fa-tint"></i> Watering${d.countdown > 0 ? ` (${d.countdown})` : ''}`;
+            // Show watering mode if available
+            let modeText = '';
+            if (d.wateringMode === 'manual') modeText = ' (Manual)';
+            else if (d.wateringMode === 'scheduled') modeText = ' (Scheduled)';
+            else if (d.wateringMode === 'auto') modeText = ' (Auto)';
+            
+            btn.innerHTML = `<i class="fas fa-tint"></i> Watering${d.countdown > 0 ? ` (${d.countdown}s)` : ''}${modeText}`;
             btn.disabled = true;
          } else if (isOver) {
             btn.innerHTML = `<i class="fas fa-tint"></i> Water Plant`;
@@ -179,7 +185,8 @@ document.addEventListener("DOMContentLoaded", () => {
    // ======= Water Plant API =======
    async function waterPlant() {
       try {
-         const res = await fetch(`/water?time=5&token=${API_KEY}`);
+         const duration = currentDuration || 5;  // Use slider duration
+         const res = await fetch(`/water?time=${duration}&token=${API_KEY}`);
          if (!res.ok) throw new Error(res.statusText);
          document.getElementById('wateringValue').textContent = 'ON';
          const btn = document.getElementById('waterButton');
@@ -190,6 +197,166 @@ document.addEventListener("DOMContentLoaded", () => {
       }
    }
    document.getElementById('waterButton').addEventListener('click', waterPlant);
+
+   // ======= Schedule Functions =======
+   
+   // Convert 12h to 24h format
+   function to24Hour(hour, meridian) {
+      let h = parseInt(hour);
+      if (meridian === 'PM' && h !== 12) h += 12;
+      if (meridian === 'AM' && h === 12) h = 0;
+      return h;
+   }
+
+   // Convert 24h to 12h format
+   function to12Hour(hour) {
+      let h = hour % 12;
+      if (h === 0) h = 12;
+      const meridian = hour >= 12 ? 'PM' : 'AM';
+      return { hour: h, meridian };
+   }
+
+   // Find next available schedule slot
+   function findNextSlot(schedules) {
+      for (let i = 0; i < schedules.length; i++) {
+         if (!schedules[i].enabled) return i;
+      }
+      return 0; // Overwrite first if all full
+   }
+
+   // Load and display schedules
+   async function loadSchedules() {
+      try {
+         const response = await fetch(`/api/schedules?token=${API_KEY}`);
+         if (!response.ok) return;
+         const data = await response.json();
+         displaySchedules(data.schedules);
+      } catch (e) {
+         console.error('Failed to load schedules:', e);
+      }
+   }
+
+   // Display schedules in the list
+   function displaySchedules(schedules) {
+      const list = document.getElementById('scheduleList');
+      if (!list) return;
+
+      list.innerHTML = '';
+      const enabled = schedules.filter(s => s.enabled);
+
+      if (enabled.length === 0) {
+         list.innerHTML = '<div class="no-schedules">No active schedules</div>';
+         return;
+      }
+
+      enabled.forEach(s => {
+         const { hour, meridian } = to12Hour(s.hour);
+         const div = document.createElement('div');
+         div.className = 'schedule-item' + (s.triggered ? ' triggered' : '');
+         div.innerHTML = `
+            <span class="schedule-time">${hour}:${String(s.minute).padStart(2, '0')} ${meridian}</span>
+            <span class="schedule-duration">${s.duration} min</span>
+            <button class="schedule-delete" data-id="${s.id}"><i class="fas fa-times"></i></button>
+         `;
+         list.appendChild(div);
+      });
+
+      // Add delete handlers
+      list.querySelectorAll('.schedule-delete').forEach(btn => {
+         btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const id = btn.dataset.id;
+            try {
+               await fetch(`/api/schedule?token=${API_KEY}&id=${id}`, { method: 'DELETE' });
+               loadSchedules();
+            } catch (err) {
+               console.error('Failed to delete schedule:', err);
+            }
+         });
+      });
+   }
+
+   // Set a new schedule
+   async function setSchedule() {
+      const hourSelect = document.getElementById('hourSelect');
+      const meridianSelect = document.getElementById('meridianSelect');
+      const durationVal = document.getElementById('durationValue');
+
+      if (!hourSelect || !meridianSelect || !durationVal) return;
+
+      const hour = to24Hour(hourSelect.value, meridianSelect.value);
+      const minute = 0; // Schedule on the hour
+      const duration = parseInt(durationVal.textContent) || 15;
+
+      // First get current schedules to find available slot
+      let slotId = 0;
+      try {
+         const res = await fetch(`/api/schedules?token=${API_KEY}`);
+         if (res.ok) {
+            const data = await res.json();
+            slotId = findNextSlot(data.schedules);
+         }
+      } catch (e) {
+         console.error('Failed to get schedules:', e);
+      }
+
+      try {
+         const params = new URLSearchParams({
+            token: API_KEY,
+            id: slotId,
+            hour: hour,
+            minute: minute,
+            duration: duration,
+            enabled: 'true'
+         });
+
+         const response = await fetch(`/api/schedule?${params}`, { method: 'POST' });
+         if (response.ok) {
+            const timeStr = `${hourSelect.value}:00 ${meridianSelect.value}`;
+            showNotification(`Schedule set for ${timeStr} (${duration} min)`, 'success');
+            loadSchedules();
+         } else {
+            const data = await response.json();
+            showNotification('Failed: ' + (data.error || 'Unknown error'), 'error');
+         }
+      } catch (e) {
+         console.error('Failed to set schedule:', e);
+         showNotification('Failed to set schedule', 'error');
+      }
+   }
+
+   // Simple notification function
+   function showNotification(message, type = 'info') {
+      // Remove existing notification
+      const existing = document.querySelector('.sai-notification');
+      if (existing) existing.remove();
+
+      const div = document.createElement('div');
+      div.className = `sai-notification ${type}`;
+      div.textContent = message;
+      document.body.appendChild(div);
+
+      // Animate in
+      setTimeout(() => div.classList.add('show'), 10);
+
+      // Remove after 3s
+      setTimeout(() => {
+         div.classList.remove('show');
+         setTimeout(() => div.remove(), 300);
+      }, 3000);
+   }
+
+   // Initialize schedule button
+   const setScheduleBtn = document.getElementById('setScheduleBtn');
+   if (setScheduleBtn) {
+      setScheduleBtn.addEventListener('click', setSchedule);
+   }
+
+   // Load schedules on page load
+   loadSchedules();
+
+   // Refresh schedules periodically (every 30s)
+   setInterval(loadSchedules, 30000);
 
    // ======= Circular Slider Logic =======
    const sliderHandle = document.getElementById('sliderHandle');
