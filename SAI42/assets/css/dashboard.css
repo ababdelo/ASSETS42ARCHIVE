@@ -310,6 +310,7 @@ body {
 
 .info-block {
    flex: 3 1 280px;
+   margin-top: 15px;
    display: flex;
    flex-direction: column;
    justify-content: center;
@@ -748,13 +749,12 @@ body {
 ========================= */
 
 .manual-section {
-   text-align: center;
-   margin-top: 24px;
-}
-
-.manual-text {
-   margin-bottom: 15px;
-   color: var(--text-secondary);
+   width: 100%;
+   display: flex;
+   justify-content: center;
+   margin-top: 16px;
+   padding-top: 12px;
+   border-top: 1px dashed var(--border-dashed);
 }
 
 .water-btn {
