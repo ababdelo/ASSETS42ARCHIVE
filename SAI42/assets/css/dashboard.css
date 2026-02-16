@@ -618,6 +618,22 @@ body {
    border-left-color: #4CAF50;
 }
 
+.schedule-item.ongoing {
+   opacity: 1;
+   border-left-color: #FF9800;
+   animation: pulse 1.5s ease-in-out infinite;
+}
+
+.schedule-item.skipped {
+   opacity: 0.6;
+   border-left-color: #9E9E9E;
+}
+
+@keyframes pulse {
+   0%, 100% { background: var(--bg-muted); }
+   50% { background: var(--accent-soft); }
+}
+
 .schedule-info {
    display: flex;
    flex-direction: column;
