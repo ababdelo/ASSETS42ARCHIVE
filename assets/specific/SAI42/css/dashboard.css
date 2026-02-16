@@ -512,7 +512,7 @@ body {
 
 /* Schedule button */
 .schedule-btn {
-   width: 100%;
+   margin: 0 auto;
    padding: 12px 20px;
    background: linear-gradient(135deg, #69b5f3, #3878c0);
    color: white;
