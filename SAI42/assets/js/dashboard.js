@@ -133,7 +133,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (d.wateringMode === 'manual') modeText = ' (Manual)';
             else if (d.wateringMode === 'scheduled') modeText = ' (Scheduled)';
             else if (d.wateringMode === 'auto') modeText = ' (Auto)';
-            btn.innerHTML = `<i class="fas fa-tint"></i> Watering${d.countdown > 0 ? ` (${d.countdown}s)` : ''}${modeText}`;
+            const countdownStr = d.countdown > 0 ? ` (${formatCountdown(d.countdown)})` : '';
+            btn.innerHTML = `<i class="fas fa-tint"></i> Watering${countdownStr}${modeText}`;
             btn.disabled = true;
          } else if (isOver) {
             btn.innerHTML = `<i class="fas fa-tint"></i> Water Plant`;
@@ -194,7 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
          const btn = document.getElementById('waterButton');
          btn.innerHTML = `<i class="fas fa-tint"></i> Watering`;
          btn.disabled = true;
-         showNotification(`Watering for ${duration} min`, 'success');
+         showNotification(`Watering for ${duration}s`, 'success');
       } catch (err) {
          console.error('Water API error', err);
          showNotification('Failed to start watering', 'error');
@@ -219,6 +220,14 @@ document.addEventListener("DOMContentLoaded", () => {
          hour: h,
          meridian
       };
+   }
+
+   // Format seconds as m:ss or just Xs for short durations
+   function formatCountdown(seconds) {
+      if (seconds < 60) return `${seconds}s`;
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${String(secs).padStart(2, '0')}`;
    }
 
    async function loadSchedules() {
