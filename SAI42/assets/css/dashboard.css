@@ -514,7 +514,7 @@ body {
 .schedule-btn {
    width: 100%;
    padding: 12px 20px;
-   background: linear-gradient(135deg, #6ba8e0, #4f7ca7);
+   background: linear-gradient(135deg, #69b5f3, #3878c0);
    color: white;
    border: none;
    border-radius: 8px;
@@ -708,7 +708,7 @@ body {
 }
 
 .sai-notification.info {
-   background: linear-gradient(135deg, #2196F3, #1565C0);
+   background: linear-gradient(135deg, #69b5f3, #3878c0);
 }
 
 /* =========================
