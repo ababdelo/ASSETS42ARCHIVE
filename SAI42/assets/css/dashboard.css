@@ -497,10 +497,32 @@ body {
    transform: scale(0.98);
 }
 
+/* =========================
+   SCHEDULE LIST (Updated)
+========================= */
+
 .schedule-list {
    display: flex;
    flex-direction: column;
    gap: 8px;
+   max-height: 140px;
+   overflow-y: auto;
+   padding-right: 4px;
+}
+
+/* Custom scrollbar for schedule list */
+.schedule-list::-webkit-scrollbar {
+   width: 4px;
+}
+
+.schedule-list::-webkit-scrollbar-track {
+   background: var(--bg-muted);
+   border-radius: 4px;
+}
+
+.schedule-list::-webkit-scrollbar-thumb {
+   background: var(--accent);
+   border-radius: 4px;
 }
 
 .schedule-item {
@@ -508,29 +530,43 @@ body {
    align-items: center;
    justify-content: space-between;
    padding: 10px 12px;
-   background: var(--card-bg, #f8f9fa);
+   background: var(--bg-muted);
    border-radius: 8px;
-   border: 1px solid var(--border-color, #e0e0e0);
+   border-left: 3px solid var(--accent);
+   transition: background 0.2s ease;
+}
+
+.schedule-item:hover {
+   background: var(--accent-soft);
 }
 
 .schedule-item.triggered {
-   opacity: 0.6;
-   background: #e8f5e9;
+   opacity: 0.5;
+   border-left-color: var(--text-secondary);
+}
+
+/* New: Schedule info container */
+.schedule-info {
+   display: flex;
+   flex-direction: column;
+   gap: 2px;
 }
 
 .schedule-time {
    font-weight: 600;
-   color: var(--text-primary, #333);
+   font-size: 0.95rem;
+   color: var(--text-primary);
 }
 
-.schedule-duration {
-   color: var(--text-secondary, #666);
-   font-size: 0.9rem;
+/* New: Schedule meta (duration + day) */
+.schedule-meta {
+   font-size: 0.75rem;
+   color: var(--text-secondary);
 }
 
 .schedule-delete {
-   background: #ff5252;
-   color: white;
+   background: transparent;
+   color: #ff5252;
    border: none;
    width: 28px;
    height: 28px;
@@ -543,33 +579,69 @@ body {
 }
 
 .schedule-delete:hover {
-   background: #ff1744;
+   background: rgba(255, 82, 82, 0.15);
    transform: scale(1.1);
 }
 
 .no-schedules {
    text-align: center;
-   color: var(--text-secondary, #888);
-   padding: 12px;
-   font-style: italic;
+   color: var(--text-secondary);
+   padding: 16px 12px;
+   font-size: 0.85rem;
 }
 
-/* Dark theme support */
+/* =========================
+   NOTIFICATIONS
+========================= */
+
+.sai-notification {
+   position: fixed;
+   bottom: 20px;
+   left: 50%;
+   transform: translateX(-50%) translateY(100px);
+   padding: 12px 24px;
+   border-radius: 30px;
+   font-size: 0.9rem;
+   font-weight: 600;
+   color: #fff;
+   z-index: 3000;
+   opacity: 0;
+   transition: transform 0.3s ease, opacity 0.3s ease;
+   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.sai-notification.show {
+   transform: translateX(-50%) translateY(0);
+   opacity: 1;
+}
+
+.sai-notification.success {
+   background: linear-gradient(135deg, #4CAF50, #2E7D32);
+}
+
+.sai-notification.error {
+   background: linear-gradient(135deg, #f44336, #c62828);
+}
+
+.sai-notification.info {
+   background: linear-gradient(135deg, #2196F3, #1565C0);
+}
+
+/* =========================
+   DARK THEME UPDATES
+========================= */
+
 .dark .schedule-item {
-   background: #2a2a2a;
-   border-color: #444;
+   background: var(--bg-muted);
+   border-left-color: var(--accent);
+}
+
+.dark .schedule-item:hover {
+   background: var(--accent-soft);
 }
 
 .dark .schedule-item.triggered {
-   background: #1a3a1a;
-}
-
-.dark .schedule-time {
-   color: #e4e4e4;
-}
-
-.dark .schedule-duration {
-   color: #aaa;
+   background: rgba(76, 175, 80, 0.1);
 }
 
 /* =========================
