@@ -138,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.disabled = true;
          } else if (isOver) {
             btn.innerHTML = `<i class="fas fa-tint"></i> Water Plant`;
-            btn.disabled = false; // Allow manual override
+            btn.disabled = true; // Disable on overwatered
             span.textContent = 'OFF';
          } else {
             span.textContent = 'OFF';
@@ -253,6 +253,11 @@ document.addEventListener("DOMContentLoaded", () => {
          return;
       }
 
+      // Check if we're currently in scheduled watering
+      const isScheduledWatering = latestSensorData &&
+         latestSensorData.pumpStatus === 'ON' &&
+         latestSensorData.wateringMode === 'scheduled';
+
       enabled.forEach(s => {
          const {
             hour,
@@ -260,9 +265,24 @@ document.addEventListener("DOMContentLoaded", () => {
          } = to12Hour(s.hour);
 
          let dayLabel = '';
+         let statusClass = '';
+
          if (currentHour !== undefined) {
             const isAhead = s.hour > currentHour || (s.hour === currentHour && s.minute > currentMinute);
-            dayLabel = s.triggered ? 'Done' : (isAhead ? 'Today' : 'Tomorrow');
+
+            if (s.triggered) {
+               if (isScheduledWatering) {
+                  dayLabel = 'Ongoing';
+                  statusClass = ' ongoing';
+               } else if (s.skipped) {
+                  dayLabel = 'Skipped';
+                  statusClass = ' skipped';
+               } else {
+                  dayLabel = 'Done';
+               }
+            } else {
+               dayLabel = isAhead ? 'Today' : 'Tomorrow';
+            }
          }
 
          const repeatIcon = s.repeat ?
@@ -270,7 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
             '<i class="fas fa-clock" title="One-time"></i>';
 
          const div = document.createElement('div');
-         div.className = 'schedule-item' + (s.triggered ? ' triggered' : '');
+         div.className = 'schedule-item' + (s.triggered ? ' triggered' : '') + statusClass;
          div.innerHTML = `
             <div class="schedule-info">
                <div class="schedule-time-row">
