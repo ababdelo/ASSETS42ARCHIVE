@@ -345,7 +345,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const div = document.createElement('div');
       div.className = `sai-notification ${type}`;
-      div.textContent = message;
+      div.innerHTML = message;
       document.body.appendChild(div);
 
       setTimeout(() => div.classList.add('show'), 10);
