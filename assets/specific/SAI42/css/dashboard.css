@@ -310,7 +310,6 @@ body {
 
 .info-block {
    flex: 3 1 280px;
-   margin-top: 15px;
    display: flex;
    flex-direction: column;
    justify-content: center;
@@ -545,7 +544,7 @@ body {
 
 /* Schedule button */
 .schedule-btn {
-   margin: 0 auto;
+   width: 100%;
    padding: 12px 20px;
    background: linear-gradient(135deg, #69b5f3, #3878c0);
    color: white;
@@ -616,22 +615,6 @@ body {
 .schedule-item.triggered {
    opacity: 0.5;
    border-left-color: #4CAF50;
-}
-
-.schedule-item.ongoing {
-   opacity: 1;
-   border-left-color: #FF9800;
-   animation: pulse 1.5s ease-in-out infinite;
-}
-
-.schedule-item.skipped {
-   opacity: 0.6;
-   border-left-color: #9E9E9E;
-}
-
-@keyframes pulse {
-   0%, 100% { background: var(--bg-muted); }
-   50% { background: var(--accent-soft); }
 }
 
 .schedule-info {
@@ -765,12 +748,13 @@ body {
 ========================= */
 
 .manual-section {
-   width: 100%;
-   display: flex;
-   justify-content: center;
-   margin-top: 16px;
-   padding-top: 12px;
-   border-top: 1px dashed var(--border-dashed);
+   text-align: center;
+   margin-top: 24px;
+}
+
+.manual-text {
+   margin-bottom: 15px;
+   color: var(--text-secondary);
 }
 
 .water-btn {
