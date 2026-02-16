@@ -81,7 +81,6 @@ body {
 }
 
 .nav-container {
-   /* max-width: 1400px; */
    height: 100%;
    margin: 0 auto;
    padding: 0 24px;
@@ -187,7 +186,6 @@ body {
       transform: rotate(360deg);
    }
 }
-
 
 /* =========================
    MAIN LAYOUT
@@ -387,8 +385,13 @@ body {
    border-radius: 30px;
    background: var(--bg-muted);
    color: var(--text-primary);
-   /* appearance: none; */
    cursor: pointer;
+   transition: border-color 0.2s ease;
+}
+
+.time-select:focus {
+   outline: none;
+   border-color: var(--accent);
 }
 
 /* =========================
@@ -448,6 +451,7 @@ body {
    border-radius: 50%;
    transform: translate(-50%, -50%);
    cursor: grab;
+   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .slider-center {
@@ -468,12 +472,45 @@ body {
    color: var(--text-secondary);
 }
 
+/* =========================
+   SCHEDULE ACTIONS
+========================= */
+
 .schedule-actions {
+   width: 100%;
    margin-top: 1rem;
    padding-top: 1rem;
-   border-top: 1px solid var(--border-color, #e0e0e0);
+   border-top: 1px solid var(--border-light);
 }
 
+/* Repeat toggle */
+.repeat-toggle {
+   display: flex;
+   justify-content: center;
+   margin-bottom: 12px;
+}
+
+.toggle-label {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   cursor: pointer;
+   font-size: 0.85rem;
+   color: var(--text-secondary);
+}
+
+.toggle-label input[type="checkbox"] {
+   width: 18px;
+   height: 18px;
+   accent-color: var(--accent);
+   cursor: pointer;
+}
+
+.toggle-text {
+   user-select: none;
+}
+
+/* Schedule button */
 .schedule-btn {
    width: 100%;
    padding: 12px 20px;
@@ -481,6 +518,7 @@ body {
    color: white;
    border: none;
    border-radius: 8px;
+   font-family: "Gugi", sans-serif;
    font-size: 1rem;
    font-weight: 600;
    cursor: pointer;
@@ -493,26 +531,27 @@ body {
 }
 
 .schedule-btn:hover {
-   box-shadow: 0 0 9px #4574a0;
+   box-shadow: 0 0 12px rgba(69, 116, 160, 0.5);
    transform: scale(0.98);
 }
 
 /* =========================
-   SCHEDULE LIST (Updated)
+   SCHEDULE LIST
 ========================= */
 
 .schedule-list {
+   width: 100%;
    display: flex;
    flex-direction: column;
    gap: 8px;
-   max-height: 140px;
+   max-height: 160px;
    overflow-y: auto;
    padding-right: 4px;
 }
 
-/* Custom scrollbar for schedule list */
+/* Custom scrollbar */
 .schedule-list::-webkit-scrollbar {
-   width: 4px;
+   width: 5px;
 }
 
 .schedule-list::-webkit-scrollbar-track {
@@ -529,36 +568,50 @@ body {
    display: flex;
    align-items: center;
    justify-content: space-between;
-   padding: 10px 12px;
+   padding: 10px 14px;
    background: var(--bg-muted);
-   border-radius: 8px;
+   border-radius: 10px;
    border-left: 3px solid var(--accent);
-   transition: background 0.2s ease;
+   transition: all 0.2s ease;
 }
 
 .schedule-item:hover {
    background: var(--accent-soft);
+   transform: translateX(2px);
 }
 
 .schedule-item.triggered {
    opacity: 0.5;
-   border-left-color: var(--text-secondary);
+   border-left-color: #4CAF50;
 }
 
-/* New: Schedule info container */
 .schedule-info {
    display: flex;
    flex-direction: column;
-   gap: 2px;
+   gap: 4px;
+}
+
+.schedule-time-row {
+   display: flex;
+   align-items: center;
+   gap: 8px;
 }
 
 .schedule-time {
    font-weight: 600;
-   font-size: 0.95rem;
+   font-size: 1rem;
    color: var(--text-primary);
 }
 
-/* New: Schedule meta (duration + day) */
+.schedule-repeat {
+   font-size: 0.7rem;
+   color: var(--accent);
+}
+
+.schedule-repeat i {
+   opacity: 0.8;
+}
+
 .schedule-meta {
    font-size: 0.75rem;
    color: var(--text-secondary);
@@ -566,28 +619,30 @@ body {
 
 .schedule-delete {
    background: transparent;
-   color: #ff5252;
+   color: var(--text-secondary);
    border: none;
-   width: 28px;
-   height: 28px;
-   border-radius: 50%;
+   width: 32px;
+   height: 32px;
+   border-radius: 8px;
    cursor: pointer;
    display: flex;
    align-items: center;
    justify-content: center;
    transition: all 0.2s ease;
+   font-size: 0.85rem;
 }
 
 .schedule-delete:hover {
    background: rgba(255, 82, 82, 0.15);
-   transform: scale(1.1);
+   color: #ff5252;
 }
 
 .no-schedules {
    text-align: center;
    color: var(--text-secondary);
-   padding: 16px 12px;
+   padding: 20px 12px;
    font-size: 0.85rem;
+   font-style: italic;
 }
 
 /* =========================
@@ -601,6 +656,7 @@ body {
    transform: translateX(-50%) translateY(100px);
    padding: 12px 24px;
    border-radius: 30px;
+   font-family: "Gugi", sans-serif;
    font-size: 0.9rem;
    font-weight: 600;
    color: #fff;
@@ -628,24 +684,7 @@ body {
 }
 
 /* =========================
-   DARK THEME UPDATES
-========================= */
-
-.dark .schedule-item {
-   background: var(--bg-muted);
-   border-left-color: var(--accent);
-}
-
-.dark .schedule-item:hover {
-   background: var(--accent-soft);
-}
-
-.dark .schedule-item.triggered {
-   background: rgba(76, 175, 80, 0.1);
-}
-
-/* =========================
-   BUTTON
+   MANUAL WATER BUTTON
 ========================= */
 
 .manual-section {
@@ -655,6 +694,7 @@ body {
 
 .manual-text {
    margin-bottom: 15px;
+   color: var(--text-secondary);
 }
 
 .water-btn {
@@ -667,12 +707,35 @@ body {
    background: var(--accent);
    color: #fff;
    cursor: pointer;
-   transition: transform 0.2s ease, opacity 0.2s ease;
+   transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
 }
 
-.water-btn:hover {
+.water-btn:hover:not(:disabled) {
    transform: translateY(-2px);
-   opacity: 0.9;
+   box-shadow: 0 4px 15px rgba(97, 184, 228, 0.4);
+}
+
+.water-btn:disabled {
+   opacity: 0.7;
+   cursor: not-allowed;
+}
+
+/* =========================
+   DARK THEME OVERRIDES
+========================= */
+
+.dark .schedule-item {
+   background: var(--bg-muted);
+}
+
+.dark .schedule-item.triggered {
+   background: rgba(76, 175, 80, 0.1);
+}
+
+.dark .time-select {
+   background: var(--bg-muted);
+   border-color: var(--border-light);
+   color: var(--text-primary);
 }
 
 /* =========================
@@ -693,7 +756,6 @@ body {
    .dashboard-grid {
       margin-top: 75px;
    }
-
 
    .theme-toggle {
       top: 95px;
@@ -717,5 +779,9 @@ body {
    .chart-container,
    .schedule-panel {
       padding: 16px;
+   }
+
+   .schedule-list {
+      max-height: 120px;
    }
 }
