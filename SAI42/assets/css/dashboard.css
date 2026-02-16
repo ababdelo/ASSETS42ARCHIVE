@@ -468,6 +468,110 @@ body {
    color: var(--text-secondary);
 }
 
+.schedule-actions {
+   margin-top: 1rem;
+   padding-top: 1rem;
+   border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.schedule-btn {
+   width: 100%;
+   padding: 12px 20px;
+   background: linear-gradient(135deg, #6ba8e0, #4f7ca7);
+   color: white;
+   border: none;
+   border-radius: 8px;
+   font-size: 1rem;
+   font-weight: 600;
+   cursor: pointer;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 8px;
+   transition: all 0.3s ease;
+   margin-bottom: 1rem;
+}
+
+.schedule-btn:hover {
+   box-shadow: 0 0 9px #4574a0;
+   transform: scale(0.98);
+}
+
+.schedule-list {
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+}
+
+.schedule-item {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   padding: 10px 12px;
+   background: var(--card-bg, #f8f9fa);
+   border-radius: 8px;
+   border: 1px solid var(--border-color, #e0e0e0);
+}
+
+.schedule-item.triggered {
+   opacity: 0.6;
+   background: #e8f5e9;
+}
+
+.schedule-time {
+   font-weight: 600;
+   color: var(--text-primary, #333);
+}
+
+.schedule-duration {
+   color: var(--text-secondary, #666);
+   font-size: 0.9rem;
+}
+
+.schedule-delete {
+   background: #ff5252;
+   color: white;
+   border: none;
+   width: 28px;
+   height: 28px;
+   border-radius: 50%;
+   cursor: pointer;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   transition: all 0.2s ease;
+}
+
+.schedule-delete:hover {
+   background: #ff1744;
+   transform: scale(1.1);
+}
+
+.no-schedules {
+   text-align: center;
+   color: var(--text-secondary, #888);
+   padding: 12px;
+   font-style: italic;
+}
+
+/* Dark theme support */
+.dark .schedule-item {
+   background: #2a2a2a;
+   border-color: #444;
+}
+
+.dark .schedule-item.triggered {
+   background: #1a3a1a;
+}
+
+.dark .schedule-time {
+   color: #e4e4e4;
+}
+
+.dark .schedule-duration {
+   color: #aaa;
+}
+
 /* =========================
    BUTTON
 ========================= */
