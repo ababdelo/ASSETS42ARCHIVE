@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-   const API_KEY = "<-- API_KEY_PLACEHOLDER -->";
+   const API_KEY = window.SAI42_API_KEY || "";
    let latestSensorData = null;
    let chartDataInitialized = false;
 
@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (d.wateringMode === 'manual') modeText = ' (Manual)';
             else if (d.wateringMode === 'scheduled') modeText = ' (Scheduled)';
             else if (d.wateringMode === 'auto') modeText = ' (Auto)';
-            
+
             btn.innerHTML = `<i class="fas fa-tint"></i> Watering${d.countdown > 0 ? ` (${d.countdown}s)` : ''}${modeText}`;
             btn.disabled = true;
          } else if (isOver) {
@@ -185,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
    // ======= Water Plant API =======
    async function waterPlant() {
       try {
-         const duration = currentDuration || 5;  // Use slider duration
+         const duration = currentDuration || 5; // Use slider duration
          const res = await fetch(`/water?time=${duration}&token=${API_KEY}`);
          if (!res.ok) throw new Error(res.statusText);
          document.getElementById('wateringValue').textContent = 'ON';
@@ -199,7 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
    document.getElementById('waterButton').addEventListener('click', waterPlant);
 
    // ======= Schedule Functions =======
-   
+
    // Convert 12h to 24h format
    function to24Hour(hour, meridian) {
       let h = parseInt(hour);
@@ -213,7 +213,10 @@ document.addEventListener("DOMContentLoaded", () => {
       let h = hour % 12;
       if (h === 0) h = 12;
       const meridian = hour >= 12 ? 'PM' : 'AM';
-      return { hour: h, meridian };
+      return {
+         hour: h,
+         meridian
+      };
    }
 
    // Find next available schedule slot
@@ -250,7 +253,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       enabled.forEach(s => {
-         const { hour, meridian } = to12Hour(s.hour);
+         const {
+            hour,
+            meridian
+         } = to12Hour(s.hour);
          const div = document.createElement('div');
          div.className = 'schedule-item' + (s.triggered ? ' triggered' : '');
          div.innerHTML = `
@@ -267,7 +273,9 @@ document.addEventListener("DOMContentLoaded", () => {
             e.preventDefault();
             const id = btn.dataset.id;
             try {
-               await fetch(`/api/schedule?token=${API_KEY}&id=${id}`, { method: 'DELETE' });
+               await fetch(`/api/schedule?token=${API_KEY}&id=${id}`, {
+                  method: 'DELETE'
+               });
                loadSchedules();
             } catch (err) {
                console.error('Failed to delete schedule:', err);
@@ -310,7 +318,9 @@ document.addEventListener("DOMContentLoaded", () => {
             enabled: 'true'
          });
 
-         const response = await fetch(`/api/schedule?${params}`, { method: 'POST' });
+         const response = await fetch(`/api/schedule?${params}`, {
+            method: 'POST'
+         });
          if (response.ok) {
             const timeStr = `${hourSelect.value}:00 ${meridianSelect.value}`;
             showNotification(`Schedule set for ${timeStr} (${duration} min)`, 'success');
