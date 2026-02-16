@@ -10,19 +10,24 @@ Assets are hosted here and referenced via raw GitHub URLs, so the client's brows
 
 ## Repository Structure
 
-Each project has its own folder:
+Assets are organized into **shared** (reusable across projects) and **specific** (project-dedicated) folders:
 
 ```
 Asset42Archive/
-├── SAI42/
-│   └── assets/
-│       ├── css/
-│       ├── js/
-│       └── images/
-├── LibraryManager/
-│   └── assets/
-└── [Future Projects]/
-    └── assets/
+├── assets/
+│   ├── shared/           # Reusable assets across projects
+│   │   └── audio/
+│   └── specific/         # Project-specific assets
+│       ├── SAI42/
+│       │   ├── css/
+│       │   ├── js/
+│       │   └── images/
+│       ├── SCHED-PMP/
+│       │   ├── css/
+│       │   ├── js/
+│       │   └── images/
+│       └── [Future Projects]/
+└── ...
 ```
 
 ## Usage
@@ -31,22 +36,29 @@ Assets are served via **jsDelivr CDN** to avoid CORS restrictions and provide fa
 
 **URL Format:**
 ```
-https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/[ProjectName]/assets/[path-to-file]
+# Shared assets
+https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/assets/shared/[type]/[file]
+
+# Project-specific assets
+https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/assets/specific/[ProjectName]/[type]/[file]
 ```
 
 **In HTML:**
 ```html
-<!-- CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/SAI42/assets/css/home.css">
+<!-- Shared Audio -->
+<audio src="https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/assets/shared/audio/relaxingLand.mp3"></audio>
 
-<!-- JavaScript -->
-<script src="https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/SAI42/assets/js/home.js"></script>
+<!-- Project CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/assets/specific/SAI42/css/home.css">
 
-<!-- Images -->
-<img src="https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/SAI42/assets/images/Others/hero.webp">
+<!-- Project JavaScript -->
+<script src="https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/assets/specific/SAI42/js/home.js"></script>
+
+<!-- Project Images -->
+<img src="https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/assets/specific/SAI42/images/Others/hero.webp">
 
 <!-- Favicon -->
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/SAI42/assets/images/Others/logo/SAI42.ico">
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/assets/specific/SAI42/images/Others/logo/SAI42.ico">
 ```
 
 **Benefits:**
@@ -56,10 +68,13 @@ https://cdn.jsdelivr.net/gh/ababdelo/ASSETS42ARCHIVE@main/[ProjectName]/assets/[
 - Minimal memory footprint on embedded devices
 - Easy updates without reflashing the device
 - Browser handles all downloading and processing
+- **Shared assets** reduce duplication across projects
+- **Specific assets** keep project resources isolated
 
 ## Current Projects
 
 - **SAI42**: Smart Automated Irrigation System
+- **SCHED-PMP**: Scheduling/PMP Project
 
 ## Notes
 
