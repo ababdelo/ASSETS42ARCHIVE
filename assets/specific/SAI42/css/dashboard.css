@@ -114,177 +114,69 @@ body {
    color: #88c335;
 }
 
-/* =========================
-   SETTINGS BUTTON & MENU
-========================= */
-
-.settings-wrapper {
-   position: relative;
+.nav-logout {
+   text-decoration: none;
+   font-size: 1.1rem;
+   color: #dc3545;
+   display: flex;
+   align-items: center;
+   gap: 6px;
 }
 
-.settings-btn {
-   background: transparent;
-   border: none;
-   cursor: pointer;
-   color: var(--accent);
-   font-size: 1.4rem;
-   padding: 8px;
+.theme-toggle {
+   position: fixed;
+   right: 20px;
+   top: 85px;
+   z-index: 1200;
+   background: var(--bg-surface);
+   border: 2px solid var(--border-light);
    border-radius: 50%;
+   width: 48px;
+   height: 48px;
+   font-size: 1.3rem;
+   cursor: pointer;
+   color: var(--text-primary);
+   box-shadow: var(--shadow-main);
    display: flex;
    align-items: center;
    justify-content: center;
-   transition: transform 0.3s ease, color 0.3s ease;
+   transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
-.settings-btn:hover {
-   transform: rotate(45deg);
+.theme-toggle:hover {
+   transform: scale(1.1);
 }
 
-.settings-btn.active {
-   transform: rotate(90deg);
-}
-
-.settings-menu {
-   position: absolute;
-   top: calc(100% + 12px);
-   right: 0;
+/* =========================
+   Music Toggle
+========================= */
+.music-toggle {
+   position: fixed;
+   right: 20px;
+   top: 145px;
+   z-index: 1200;
    background: var(--bg-surface);
-   border-radius: 12px;
-   box-shadow: var(--shadow-main);
-   border: 1px solid var(--border-light);
-   min-width: 200px;
-   opacity: 0;
-   visibility: hidden;
-   transform: translateY(-10px);
-   transition: all 0.2s ease;
-   z-index: 1300;
-   overflow: hidden;
-}
-
-.settings-menu.open {
-   opacity: 1;
-   visibility: visible;
-   transform: translateY(0);
-}
-
-.settings-item {
-   display: flex;
-   align-items: center;
-   justify-content: space-between;
-   padding: 14px 16px;
-   border-bottom: 1px solid var(--border-light);
-   transition: background 0.2s ease;
-}
-
-.settings-item:last-child {
-   border-bottom: none;
-}
-
-.settings-item:hover {
-   background: var(--bg-muted);
-}
-
-.settings-item-left {
-   display: flex;
-   align-items: center;
-   gap: 10px;
-   color: var(--text-primary);
-   font-size: 0.9rem;
-}
-
-.settings-item-left i {
-   width: 18px;
-   text-align: center;
-}
-
-.settings-item-left i.fa-moon {
-   color: #5c6bc0;
-}
-
-.settings-item-left i.fa-music {
-   color: var(--accent);
-}
-
-.settings-item-left i.fa-wifi {
-   color: #26a69a;
-}
-
-.settings-item-left i.fa-power-off {
-   color: #dc3545;
-}
-
-/* Toggle Switch */
-.toggle-switch {
-   position: relative;
-   width: 44px;
-   height: 24px;
-}
-
-.toggle-switch input {
-   opacity: 0;
-   width: 0;
-   height: 0;
-}
-
-.toggle-slider {
-   position: absolute;
-   cursor: pointer;
-   top: 0;
-   left: 0;
-   right: 0;
-   bottom: 0;
-   background-color: var(--border-light);
-   transition: 0.3s;
-   border-radius: 24px;
-}
-
-.toggle-slider:before {
-   position: absolute;
-   content: "";
-   height: 18px;
-   width: 18px;
-   left: 3px;
-   bottom: 3px;
-   background-color: white;
-   transition: 0.3s;
+   border: 2px solid var(--border-light);
    border-radius: 50%;
-   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.toggle-switch input:checked+.toggle-slider {
-   background-color: var(--accent);
-}
-
-.toggle-switch input:checked+.toggle-slider:before {
-   transform: translateX(20px);
-}
-
-/* WiFi Settings Link */
-.settings-link {
-   text-decoration: none;
-   color: inherit;
+   width: 48px;
+   height: 48px;
+   font-size: 1.3rem;
+   cursor: pointer;
+   color: var(--text-primary);
+   box-shadow: var(--shadow-main);
    display: flex;
    align-items: center;
-   justify-content: space-between;
-   width: 100%;
+   justify-content: center;
+   transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
-.settings-link i.fa-external-link-alt {
-   font-size: 0.75rem;
-   color: var(--text-secondary);
+.music-toggle:hover {
+   transform: scale(1.1);
 }
 
-/* Logout Item */
-.settings-item.logout-item {
-   cursor: pointer;
-}
-
-.settings-item.logout-item:hover {
-   background: rgba(220, 53, 69, 0.1);
-}
-
-.settings-item.logout-item .settings-item-left {
-   color: #dc3545;
+.music-toggle.playing {
+   color: var(--accent);
+   border-color: var(--accent);
 }
 
 /* =========================
@@ -755,14 +647,6 @@ body {
 .schedule-meta {
    font-size: 0.75rem;
    color: var(--text-secondary);
-   display: flex;
-   align-items: center;
-   gap: 4px;
-}
-
-.schedule-meta i {
-   font-size: 0.7rem;
-   opacity: 0.7;
 }
 
 .schedule-delete {
@@ -806,6 +690,19 @@ body {
 .schedule-badge.done {
    background: rgba(76, 175, 80, 0.15);
    color: #4CAF50;
+}
+
+.schedule-meta {
+   font-size: 0.75rem;
+   color: var(--text-secondary);
+   display: flex;
+   align-items: center;
+   gap: 4px;
+}
+
+.schedule-meta i {
+   font-size: 0.7rem;
+   opacity: 0.7;
 }
 
 /* =========================
@@ -917,7 +814,11 @@ body {
 
 @media (max-width: 768px) {
    .dashboard-grid {
-      margin-top: 20px;
+      margin-top: 75px;
+   }
+
+   .theme-toggle {
+      top: 95px;
    }
 
    .main-wrapper {
@@ -926,6 +827,10 @@ body {
 
    #sensors-chart {
       height: 250px;
+   }
+
+   .music-toggle {
+      top: 155px;
    }
 }
 
@@ -942,9 +847,5 @@ body {
 
    .schedule-list {
       max-height: 120px;
-   }
-
-   .settings-menu {
-      min-width: 180px;
    }
 }
