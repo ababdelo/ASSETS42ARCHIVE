@@ -3,121 +3,13 @@ document.addEventListener("DOMContentLoaded", () => {
    let latestSensorData = null;
    let chartDataInitialized = false;
 
-   // ======= Settings Menu Elements =======
-   const settingsBtn = document.getElementById('settingsBtn');
-   const settingsMenu = document.getElementById('settingsMenu');
-   const darkModeToggle = document.getElementById('darkModeToggle');
-   const musicToggleCheckbox = document.getElementById('musicToggle');
-   const logoutBtn = document.getElementById('logoutBtn');
-   const bgMusic = document.getElementById('bgMusic');
-
-   // ======= Settings Menu Toggle =======
-   if (settingsBtn && settingsMenu) {
-      settingsBtn.addEventListener('click', (e) => {
-         e.stopPropagation();
-         settingsBtn.classList.toggle('active');
-         settingsMenu.classList.toggle('open');
-      });
-
-      document.addEventListener('click', (e) => {
-         if (!settingsMenu.contains(e.target) && !settingsBtn.contains(e.target)) {
-            settingsMenu.classList.remove('open');
-            settingsBtn.classList.remove('active');
-         }
-      });
-
-      settingsMenu.addEventListener('click', (e) => {
-         e.stopPropagation();
-      });
-   }
-
-   // ======= Restore Theme =======
+   // ======= Restore Theme First =======
    const savedTheme = localStorage.getItem("theme");
+   const toggleBtn = document.getElementById("themeToggle");
    if (savedTheme === "dark") {
       document.body.classList.add("dark");
-      if (darkModeToggle) darkModeToggle.checked = true;
+      toggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
    }
-
-   // ======= Dark Mode Toggle =======
-   if (darkModeToggle) {
-      darkModeToggle.addEventListener('change', () => {
-         document.body.classList.toggle('dark', darkModeToggle.checked);
-         localStorage.setItem('theme', darkModeToggle.checked ? 'dark' : 'light');
-         updateChartTheme(darkModeToggle.checked);
-      });
-   }
-
-   // ======= Logout Handler =======
-   if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => {
-         window.location.href = '/login?action=logout';
-      });
-   }
-
-   // ======= Music Toggle with Auto-Play Fix =======
-   const musicEnabled = localStorage.getItem('musicEnabled') === 'true';
-   let musicPendingPlay = musicEnabled;
-   let userInteracted = false;
-   let musicWasPlaying = false;
-
-   if (musicToggleCheckbox) {
-      musicToggleCheckbox.checked = musicEnabled;
-   }
-
-   // Try to play music immediately if enabled
-   if (musicEnabled && bgMusic) {
-      bgMusic.play().then(() => {
-         musicPendingPlay = false;
-      }).catch(() => {
-         musicPendingPlay = true;
-      });
-   }
-
-   // Handle user interaction to enable autoplay
-   function handleFirstInteraction() {
-      if (!userInteracted) {
-         userInteracted = true;
-         if (musicPendingPlay && musicToggleCheckbox && musicToggleCheckbox.checked && bgMusic) {
-            bgMusic.play().then(() => {
-               musicPendingPlay = false;
-            }).catch(() => {});
-         }
-         document.removeEventListener('click', handleFirstInteraction);
-         document.removeEventListener('keydown', handleFirstInteraction);
-         document.removeEventListener('touchstart', handleFirstInteraction);
-      }
-   }
-
-   document.addEventListener('click', handleFirstInteraction);
-   document.addEventListener('keydown', handleFirstInteraction);
-   document.addEventListener('touchstart', handleFirstInteraction);
-
-   if (musicToggleCheckbox) {
-      musicToggleCheckbox.addEventListener('change', () => {
-         if (musicToggleCheckbox.checked) {
-            if (bgMusic) bgMusic.play().catch(() => {});
-            localStorage.setItem('musicEnabled', 'true');
-         } else {
-            if (bgMusic) bgMusic.pause();
-            localStorage.setItem('musicEnabled', 'false');
-         }
-      });
-   }
-
-   // Pause/resume music on visibility change
-   document.addEventListener('visibilitychange', () => {
-      if (!bgMusic) return;
-      if (document.hidden) {
-         musicWasPlaying = !bgMusic.paused;
-         if (musicWasPlaying) {
-            bgMusic.pause();
-         }
-      } else {
-         if (musicWasPlaying && localStorage.getItem('musicEnabled') === 'true') {
-            bgMusic.play().catch(() => {});
-         }
-      }
-   });
 
    // ======= Highcharts Theme =======
    function getChartTheme() {
@@ -202,53 +94,6 @@ document.addEventListener("DOMContentLoaded", () => {
             enabled: false
          }
       };
-   }
-
-   // ======= Update Chart Theme =======
-   function updateChartTheme(isDark) {
-      const themeOpts = {
-         legend: {
-            itemStyle: {
-               color: isDark ? '#e4e4e4' : '#333'
-            },
-            itemHoverStyle: {
-               color: isDark ? '#ffffff' : '#000000'
-            }
-         },
-         xAxis: {
-            labels: {
-               style: {
-                  color: isDark ? '#e4e4e4' : '#333'
-               }
-            },
-            lineColor: isDark ? '#444' : '#ddd',
-            tickColor: isDark ? '#444' : '#ddd'
-         },
-         yAxis: [{
-            labels: {
-               style: {
-                  color: isDark ? '#7cb5ec' : 'rgb(100,149,237)'
-               }
-            },
-            gridLineColor: isDark ? '#333' : '#eee'
-         }, {
-            labels: {
-               style: {
-                  color: isDark ? '#f45b5b' : 'rgb(247,38,59)'
-               }
-            },
-            gridLineColor: isDark ? '#333' : '#eee'
-         }]
-      };
-      chartH.update(themeOpts, true, false);
-      chartH.series[0].update({
-         color: isDark ? '#7cb5ec' : 'rgb(100,149,237)',
-         fillColor: isDark ? 'rgba(124,181,236,0.15)' : 'rgba(100,149,237,0.2)'
-      }, false);
-      chartH.series[1].update({
-         color: isDark ? '#f45b5b' : 'rgb(247,38,59)',
-         fillColor: isDark ? 'rgba(244,91,91,0.15)' : 'rgba(247,38,59,0.2)'
-      }, true);
    }
 
    // ======= Initialize Chart =======
@@ -726,6 +571,47 @@ document.addEventListener("DOMContentLoaded", () => {
       };
    }
 
+   // ======= Music Toggle =======
+   const musicToggle = document.getElementById('musicToggle');
+   const bgMusic = document.getElementById('bgMusic');
+   let musicWasPlaying = false;
+
+   // Restore music state
+   const musicEnabled = localStorage.getItem('musicEnabled') === 'true';
+   if (musicEnabled && bgMusic) {
+      bgMusic.play().catch(() => {});
+      musicToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+      musicToggle.classList.add('playing');
+   }
+
+   musicToggle.addEventListener('click', () => {
+      if (bgMusic.paused) {
+         bgMusic.play();
+         musicToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+         musicToggle.classList.add('playing');
+         localStorage.setItem('musicEnabled', 'true');
+      } else {
+         bgMusic.pause();
+         musicToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
+         musicToggle.classList.remove('playing');
+         localStorage.setItem('musicEnabled', 'false');
+      }
+   });
+
+   // Pause music when tab/window is not visible, resume when visible
+   document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+         musicWasPlaying = !bgMusic.paused;
+         if (musicWasPlaying) {
+            bgMusic.pause();
+         }
+      } else {
+         if (musicWasPlaying && localStorage.getItem('musicEnabled') === 'true') {
+            bgMusic.play().catch(() => {});
+         }
+      }
+   });
+
    function updateSlider(minutes) {
       currentDuration = Math.max(0, Math.min(60, minutes));
       const {
@@ -794,4 +680,56 @@ document.addEventListener("DOMContentLoaded", () => {
          setTimeout(() => overlay.style.display = 'none', 300);
       }, 150);
    }, 1500);
+
+   // ======= Theme Toggle =======
+   toggleBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      const isDark = document.body.classList.contains("dark");
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+      toggleBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+
+      const themeOpts = {
+         legend: {
+            itemStyle: {
+               color: isDark ? '#e4e4e4' : '#333'
+            },
+            itemHoverStyle: {
+               color: isDark ? '#ffffff' : '#000000'
+            }
+         },
+         xAxis: {
+            labels: {
+               style: {
+                  color: isDark ? '#e4e4e4' : '#333'
+               }
+            },
+            lineColor: isDark ? '#444' : '#ddd',
+            tickColor: isDark ? '#444' : '#ddd'
+         },
+         yAxis: [{
+            labels: {
+               style: {
+                  color: isDark ? '#7cb5ec' : 'rgb(100,149,237)'
+               }
+            },
+            gridLineColor: isDark ? '#333' : '#eee'
+         }, {
+            labels: {
+               style: {
+                  color: isDark ? '#f45b5b' : 'rgb(247,38,59)'
+               }
+            },
+            gridLineColor: isDark ? '#333' : '#eee'
+         }]
+      };
+      chartH.update(themeOpts, true, false);
+      chartH.series[0].update({
+         color: isDark ? '#7cb5ec' : 'rgb(100,149,237)',
+         fillColor: isDark ? 'rgba(124,181,236,0.15)' : 'rgba(100,149,237,0.2)'
+      }, false);
+      chartH.series[1].update({
+         color: isDark ? '#f45b5b' : 'rgb(247,38,59)',
+         fillColor: isDark ? 'rgba(244,91,91,0.15)' : 'rgba(247,38,59,0.2)'
+      }, true);
+   });
 });
