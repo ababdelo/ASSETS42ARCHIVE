@@ -1,0 +1,152 @@
+/* =========================
+   TOAST NOTIFICATIONS
+========================= */
+
+.notifications {
+  position: fixed;
+  top: 95px;
+  right: -5px;
+  z-index: 10002;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.notifications.login-notif {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  width: 450px;
+  padding: 16px;
+  margin-bottom: 10px;
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.3s forwards;
+  transition: transform 0.3s;
+  position: relative;
+  font-family: "Gugi", sans-serif;
+  letter-spacing: 0.5px;
+  font-size: medium;
+}
+
+.toast.hide {
+  animation: slideOut 0.3s forwards;
+}
+
+.toast .progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: currentColor;
+  width: 100%;
+  animation: progressBar 5s linear forwards;
+}
+
+.toast .column i {
+  font-size: 1.25rem;
+  margin-right: 10px;
+}
+
+.toast .column .description {
+  color: var(--text-primary, #333333);
+  margin-left: 5px;
+  margin-right: 7.5px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.toast .column .type {
+  margin-right: 5px;
+  font-weight: bold;
+}
+
+.toast .column .colon {
+  color: var(--text-primary, #333333);
+}
+
+.toast .close-btn {
+  cursor: pointer;
+  padding-left: 10px;
+  font-size: 1.25rem;
+  color: #aeb0d7;
+  transition: color 0.2s;
+}
+
+.toast .close-btn:hover {
+  color: var(--text-primary, #333333);
+}
+
+.toast.success {
+  color: var(--success, #51bd12);
+}
+
+.toast.error {
+  color: var(--error, #e24d4c);
+}
+
+.toast.warning {
+  color: var(--warning, #e9bd0c);
+}
+
+.toast.info {
+  color: var(--info, #3498db);
+}
+
+@keyframes slideIn {
+  0% {
+    transform: translateX(100%);
+  }
+  40% {
+    transform: translateX(-5%);
+  }
+  80% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-10px);
+  }
+}
+
+@keyframes slideOut {
+  0% {
+    transform: translateX(-10px);
+  }
+  40% {
+    transform: translateX(0%);
+  }
+  80% {
+    transform: translateX(-5%);
+  }
+  100% {
+    transform: translateX(calc(100% + 20px));
+  }
+}
+
+@keyframes progressBar {
+  0% {
+    width: 100%;
+  }
+  100% {
+    width: 0;
+  }
+}
+
+@media screen and (max-width: 530px) {
+  .toast {
+    width: 95%;
+    padding: 12px;
+  }
+  .toast .column span {
+    font-size: 0.9rem;
+  }
+}
