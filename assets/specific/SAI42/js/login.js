@@ -1,1 +1,68 @@
-function togglePassword() { const passwordInput = document.getElementById('password'); const eyeIcon = document.getElementById('eye-icon'); if (passwordInput.type === 'password') { passwordInput.type = 'text'; eyeIcon.classList.remove('ri-eye-line'); eyeIcon.classList.add('ri-eye-off-line'); } else { passwordInput.type = 'password'; eyeIcon.classList.remove('ri-eye-off-line'); eyeIcon.classList.add('ri-eye-line'); }}function openSerialModal(event) { event.preventDefault(); document.getElementById('serialModal').style.display = 'flex'; const inputs = document.querySelectorAll('.otp-inputs input'); inputs[0].focus();}function closeSerialModal() { document.getElementById('serialModal').style.display = 'none'; const inputs = document.querySelectorAll('.otp-inputs input'); inputs.forEach(input => input.value = ''); document.getElementById('verifyBtn').disabled = true;}function moveToNext(input, index) { const inputs = document.querySelectorAll('.otp-inputs input');  input.value = input.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();  if (input.value.length === 1 && index < inputs.length - 1) { inputs[index + 1].focus(); }  checkAllInputsFilled();}function checkAllInputsFilled() { const inputs = document.querySelectorAll('.otp-inputs input'); const allFilled = Array.from(inputs).every(input => input.value.length === 1); document.getElementById('verifyBtn').disabled = !allFilled;}function submitSerialKey() { const inputs = document.querySelectorAll('.otp-inputs input'); const serialKey = Array.from(inputs).map(input => input.value).join(''); if (serialKey.length === 5) { window.location.href = '/login?recover=1&key=' + serialKey; } closeSerialModal();}window.onclick = function (event) { const modal = document.getElementById('serialModal'); if (event.target === modal) { closeSerialModal(); }}
+document.addEventListener('DOMContentLoaded', () => {
+    const errorEl = document.getElementById('error-msg');
+    if (errorEl) {
+        const msg = errorEl.textContent.trim();
+        const placeholder = '<-- ERROR_PLACEHOLDER -->';
+        if (msg && msg !== placeholder) {
+            showNotification('error', `Error: ${msg}`);
+        }
+    }
+});
+
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const eyeIcon = document.getElementById('eye-icon');
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeIcon.classList.remove('ri-eye-line');
+        eyeIcon.classList.add('ri-eye-off-line');
+    } else {
+        passwordInput.type = 'password';
+        eyeIcon.classList.remove('ri-eye-off-line');
+        eyeIcon.classList.add('ri-eye-line');
+    }
+}
+
+function openSerialModal(event) {
+    event.preventDefault();
+    document.getElementById('serialModal').style.display = 'flex';
+    const inputs = document.querySelectorAll('.otp-inputs input');
+    inputs[0].focus();
+}
+
+function closeSerialModal() {
+    document.getElementById('serialModal').style.display = 'none';
+    const inputs = document.querySelectorAll('.otp-inputs input');
+    inputs.forEach(input => input.value = '');
+    document.getElementById('verifyBtn').disabled = true;
+}
+
+function moveToNext(input, index) {
+    const inputs = document.querySelectorAll('.otp-inputs input');
+    input.value = input.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    if (input.value.length === 1 && index < inputs.length - 1) {
+        inputs[index + 1].focus();
+    }
+    checkAllInputsFilled();
+}
+
+function checkAllInputsFilled() {
+    const inputs = document.querySelectorAll('.otp-inputs input');
+    const allFilled = Array.from(inputs).every(input => input.value.length === 1);
+    document.getElementById('verifyBtn').disabled = !allFilled;
+}
+
+function submitSerialKey() {
+    const inputs = document.querySelectorAll('.otp-inputs input');
+    const serialKey = Array.from(inputs).map(input => input.value).join('');
+    if (serialKey.length === 5) {
+        window.location.href = '/login?recover=1&key=' + serialKey;
+    }
+    closeSerialModal();
+}
+window.onclick = function (event) {
+    const modal = document.getElementById('serialModal');
+    if (event.target === modal) {
+        closeSerialModal();
+    }
+}
