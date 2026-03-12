@@ -134,6 +134,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 yAxis: 1,
                 color: isDark ? '#f45b5b' : 'rgb(247,38,59)',
                 fillColor: isDark ? 'rgba(244,91,91,0.15)' : 'rgba(247,38,59,0.2)'
+            }, {
+                name: 'Humidity',
+                data: [],
+                yAxis: 0,
+                color: isDark ? '#47c9af' : '#47c9af',
+                fillColor: isDark ? 'rgba(71,201,175,0.15)' : 'rgba(71,201,175,0.2)'
             }],
             credits: {
                 enabled: false
@@ -148,6 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const ws = new WebSocket('ws://' + location.hostname + '/ws');
     ws.onopen = () => console.log('WebSocket open');
     ws.onerror = e => console.error('WebSocket error', e);
+    ws.onclose = () => console.log('WebSocket closed');
 
     ws.onmessage = e => {
         try {
@@ -226,8 +233,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const now = Date.now();
         const m = parseFloat(latestSensorData.moisture) || 0;
         const t = parseFloat(latestSensorData.temperature) || 0;
-        chartH.series[0].addPoint([now, m], true, chartH.series[0].data.length >= 9);
-        chartH.series[1].addPoint([now, t], true, chartH.series[1].data.length >= 9);
+        const h = parseFloat(latestSensorData.humidity) || 0;
+        chartH.series[0].addPoint([now, m], false, chartH.series[0].data.length >= 9);
+        chartH.series[1].addPoint([now, t], false, chartH.series[1].data.length >= 9);
+        chartH.series[2].addPoint([now, h], true, chartH.series[2].data.length >= 9);
     }
 
     // ======= Water Plant API =======
@@ -701,6 +710,56 @@ document.addEventListener("DOMContentLoaded", () => {
     setInterval(loadChartData, 10000);
     loadChartData();
 
+    // ======= System Info =======
+    async function fetchSystemInfo() {
+        try {
+            const res = await fetch(`/api/system?token=${API_KEY}`);
+            if (!res.ok) return;
+            const d = await res.json();
+            const upSec = d.uptime || 0;
+            const days = Math.floor(upSec / 86400);
+            const hrs = Math.floor((upSec % 86400) / 3600);
+            const mins = Math.floor((upSec % 3600) / 60);
+            document.getElementById('sysUptime').textContent = days > 0 ? `${days}d ${hrs}h ${mins}m` : `${hrs}h ${mins}m`;
+            const rssi = d.rssi || 0;
+            let signal = 'Weak';
+            if (rssi > -50) signal = 'Excellent';
+            else if (rssi > -60) signal = 'Good';
+            else if (rssi > -70) signal = 'Fair';
+            document.getElementById('sysRssi').textContent = `${rssi} dBm (${signal})`;
+            const heap = d.freeHeap || 0;
+            document.getElementById('sysHeap').textContent = heap > 1024 ? `${(heap / 1024).toFixed(1)} KB` : `${heap} B`;
+            if (d.ip) document.getElementById('sysIp').textContent = d.ip;
+        } catch (e) { console.error('System info error', e); }
+    }
+    fetchSystemInfo();
+    setInterval(fetchSystemInfo, 15000);
+
+    // ======= Export Sensor Data =======
+    document.getElementById('exportBtn').addEventListener('click', () => {
+        if (!chartH || !chartH.series[0].data.length) {
+            showNotification('info', 'Info: No data to export');
+            return;
+        }
+        let csv = 'Timestamp,Soil Moisture (%),Temperature (°C),Humidity (%)\n';
+        const len = chartH.series[0].data.length;
+        for (let i = 0; i < len; i++) {
+            const m = chartH.series[0].data[i];
+            const t = chartH.series[1].data[i];
+            const h = chartH.series[2].data[i];
+            const ts = new Date(m.x).toISOString();
+            csv += `${ts},${m.y},${t ? t.y : ''},${h ? h.y : ''}\n`;
+        }
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `SAI42_sensors_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showNotification('success', 'Success: Sensor data exported');
+    });
+
     // ======= Loading Animation =======
     const overlay = document.getElementById('loadingOverlay');
     const mainWrapper = document.querySelector('.main-wrapper');
@@ -763,6 +822,10 @@ document.addEventListener("DOMContentLoaded", () => {
         chartH.series[1].update({
             color: isDark ? '#f45b5b' : 'rgb(247,38,59)',
             fillColor: isDark ? 'rgba(244,91,91,0.15)' : 'rgba(247,38,59,0.2)'
+        }, false);
+        chartH.series[2].update({
+            color: '#47c9af',
+            fillColor: isDark ? 'rgba(71,201,175,0.15)' : 'rgba(71,201,175,0.2)'
         }, true);
     });
 });
