@@ -1017,10 +1017,6 @@ body {
 }
 
 @media (max-width: 768px) {
-  .dashboard-grid {
-    margin-top: 75px;
-  }
-
   #sensors-chart {
     height: 250px;
   }
@@ -1035,7 +1031,7 @@ body {
   .chart-container,
   .schedule-panel,
   .system-card {
-    padding: 42px;
+    padding: 16px 50px;
   }
 
   .system-grid {
