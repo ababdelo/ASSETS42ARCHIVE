@@ -1022,7 +1022,7 @@ body {
   }
 
   .main-wrapper {
-    padding: 12px;
+    padding: 100px 12px;
   }
 
   #sensors-chart {
@@ -1039,7 +1039,7 @@ body {
   .chart-container,
   .schedule-panel,
   .system-card {
-    padding: 16px;
+    padding: 42px;
   }
 
   .system-grid {
