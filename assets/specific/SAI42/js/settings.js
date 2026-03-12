@@ -90,14 +90,36 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    async function scanWifi() {
-        wifiList.innerHTML = '<div class="wifi-empty">Scanning...</div>';
-        try {
-            const res = await fetch(buildUrl("/api/wifi/scan"));
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Scan failed");
+    let scanInProgress = false;
 
-            if (!data.networks || !data.networks.length) {
+    async function scanWifi() {
+        if (scanInProgress) return;
+
+        scanInProgress = true;
+        scanBtn.disabled = true;
+        wifiList.innerHTML = '<div class="wifi-empty">Scanning...</div>';
+
+        try {
+            let data = null;
+
+            for (let i = 0; i < 20; i++) {
+                const res = await fetch(buildUrl("/api/wifi/scan"));
+                data = await res.json();
+
+                if (res.status === 202) {
+                    await new Promise((resolve) => setTimeout(resolve, 400));
+                    continue;
+                }
+
+                if (!res.ok) throw new Error(data.error || "Scan failed");
+                break;
+            }
+
+            if (!data || !Array.isArray(data.networks)) {
+                throw new Error("Scan timed out");
+            }
+
+            if (!data.networks.length) {
                 wifiList.innerHTML = '<div class="wifi-empty">No networks found.</div>';
                 return;
             }
@@ -117,6 +139,9 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
             wifiList.innerHTML = '<div class="wifi-empty">Scan failed.</div>';
             show("error", `Error: ${err.message}`);
+        } finally {
+            scanInProgress = false;
+            scanBtn.disabled = false;
         }
     }
 
