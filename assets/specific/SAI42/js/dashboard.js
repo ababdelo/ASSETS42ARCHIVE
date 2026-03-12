@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const API_KEY = window.SAI42_API_KEY || "";
     let latestSensorData = null;
     let chartDataInitialized = false;
+    const sampleHistory = [];
 
     // ======= Restore Theme First =======
     const savedTheme = localStorage.getItem("theme");
@@ -57,6 +58,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ======= Highcharts Theme =======
+    function getPrimaryAxisTickColor(value, isDark) {
+        return value % 50 === 0 ? (isDark ? '#7cb5ec' : 'rgb(100,149,237)') : '#47c9af';
+    }
+
     function getChartTheme() {
         const isDark = document.body.classList.contains('dark');
         return {
@@ -94,9 +99,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 },
                 tickPositions: [0, 25, 50, 75, 100],
                 labels: {
-                    style: {
-                        color: isDark ? '#7cb5ec' : 'rgb(100,149,237)',
-                        fontWeight: 'bold'
+                    useHTML: true,
+                    formatter: function () {
+                        return `<span style="color:${getPrimaryAxisTickColor(this.value, isDark)};font-weight:bold;">${this.value}</span>`;
                     }
                 },
                 gridLineColor: isDark ? '#333' : '#eee'
@@ -126,8 +131,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 name: 'Soil Moisture',
                 data: [],
                 yAxis: 0,
-                color: isDark ? '#7cb5ec' : 'rgb(100,149,237)',
-                fillColor: isDark ? 'rgba(124,181,236,0.15)' : 'rgba(100,149,237,0.2)'
+                color: isDark ? '#47c9af' : '#47c9af',
+                fillColor: isDark ? 'rgba(71,201,175,0.15)' : 'rgba(71,201,175,0.2)'
             }, {
                 name: 'Temperature',
                 data: [],
@@ -138,8 +143,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 name: 'Humidity',
                 data: [],
                 yAxis: 0,
-                color: isDark ? '#47c9af' : '#47c9af',
-                fillColor: isDark ? 'rgba(71,201,175,0.15)' : 'rgba(71,201,175,0.2)'
+                color: isDark ? '#7cb5ec' : 'rgb(100,149,237)',
+                fillColor: isDark ? 'rgba(124,181,236,0.15)' : 'rgba(100,149,237,0.2)'
             }],
             credits: {
                 enabled: false
@@ -234,9 +239,45 @@ document.addEventListener("DOMContentLoaded", () => {
         const m = parseFloat(latestSensorData.moisture) || 0;
         const t = parseFloat(latestSensorData.temperature) || 0;
         const h = parseFloat(latestSensorData.humidity) || 0;
-        chartH.series[0].addPoint([now, m], false, chartH.series[0].data.length >= 9);
-        chartH.series[1].addPoint([now, t], false, chartH.series[1].data.length >= 9);
-        chartH.series[2].addPoint([now, h], true, chartH.series[2].data.length >= 9);
+        const shouldShift = chartH.series[0].data.length >= 9;
+
+        if (shouldShift) {
+            sampleHistory.shift();
+        }
+
+        sampleHistory.push({
+            timestamp: now,
+            soilMoisture: m,
+            temperature: t,
+            humidity: h,
+            brightness: latestSensorData.lighting || '',
+            weather: latestSensorData.weather || '',
+            pumpStatus: latestSensorData.pumpStatus || '',
+            plantStatus: latestSensorData.plantStatus || ''
+        });
+
+        chartH.series[0].addPoint([now, m], false, shouldShift);
+        chartH.series[1].addPoint([now, t], false, shouldShift);
+        chartH.series[2].addPoint([now, h], true, shouldShift);
+    }
+
+    function escapeCsvValue(value) {
+        const normalized = value === undefined || value === null ? '' : String(value);
+        if (!/[",\n]/.test(normalized)) {
+            return normalized;
+        }
+        return `"${normalized.replace(/"/g, '""')}"`;
+    }
+
+    function formatExportTimestamp(timestamp) {
+        return new Date(timestamp).toLocaleString([], {
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
     }
 
     // ======= Water Plant API =======
@@ -737,19 +778,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ======= Export Sensor Data =======
     document.getElementById('exportBtn').addEventListener('click', () => {
-        if (!chartH || !chartH.series[0].data.length) {
+        if (!sampleHistory.length) {
             showNotification('info', 'Info: No data to export');
             return;
         }
-        let csv = 'Timestamp,Soil Moisture (%),Temperature (°C),Humidity (%)\n';
-        const len = chartH.series[0].data.length;
-        for (let i = 0; i < len; i++) {
-            const m = chartH.series[0].data[i];
-            const t = chartH.series[1].data[i];
-            const h = chartH.series[2].data[i];
-            const ts = new Date(m.x).toISOString();
-            csv += `${ts},${m.y},${t ? t.y : ''},${h ? h.y : ''}\n`;
-        }
+        let csv = 'Timestamp,Soil Moisture (%),Temperature (°C),Humidity (%),Brightness,Weather,Pump Status,Plant Status\n';
+        sampleHistory.forEach(sample => {
+            csv += [
+                escapeCsvValue(formatExportTimestamp(sample.timestamp)),
+                sample.soilMoisture,
+                sample.temperature,
+                sample.humidity,
+                escapeCsvValue(sample.brightness),
+                escapeCsvValue(sample.weather),
+                escapeCsvValue(sample.pumpStatus),
+                escapeCsvValue(sample.plantStatus)
+            ].join(',') + '\n';
+        });
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -777,6 +822,7 @@ document.addEventListener("DOMContentLoaded", () => {
         e.stopPropagation();
         document.body.classList.toggle("dark");
         const isDark = document.body.classList.contains("dark");
+        const humidityAxisColor = isDark ? '#7cb5ec' : 'rgb(100,149,237)';
         localStorage.setItem("theme", isDark ? "dark" : "light");
         toggleBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i> <span>Light Mode</span>' : '<i class="fas fa-moon"></i> <span>Dark Mode</span>';
 
@@ -800,8 +846,9 @@ document.addEventListener("DOMContentLoaded", () => {
             },
             yAxis: [{
                 labels: {
-                    style: {
-                        color: isDark ? '#7cb5ec' : 'rgb(100,149,237)'
+                    useHTML: true,
+                    formatter: function () {
+                        return `<span style="color:${getPrimaryAxisTickColor(this.value, isDark)};font-weight:bold;">${this.value}</span>`;
                     }
                 },
                 gridLineColor: isDark ? '#333' : '#eee'
@@ -816,16 +863,16 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         chartH.update(themeOpts, true, false);
         chartH.series[0].update({
-            color: isDark ? '#7cb5ec' : 'rgb(100,149,237)',
-            fillColor: isDark ? 'rgba(124,181,236,0.15)' : 'rgba(100,149,237,0.2)'
+            color: '#47c9af',
+            fillColor: isDark ? 'rgba(71,201,175,0.15)' : 'rgba(71,201,175,0.2)'
         }, false);
         chartH.series[1].update({
             color: isDark ? '#f45b5b' : 'rgb(247,38,59)',
             fillColor: isDark ? 'rgba(244,91,91,0.15)' : 'rgba(247,38,59,0.2)'
         }, false);
         chartH.series[2].update({
-            color: '#47c9af',
-            fillColor: isDark ? 'rgba(71,201,175,0.15)' : 'rgba(71,201,175,0.2)'
+            color: humidityAxisColor,
+            fillColor: isDark ? 'rgba(124,181,236,0.15)' : 'rgba(100,149,237,0.2)'
         }, true);
     });
 });
