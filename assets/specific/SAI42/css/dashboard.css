@@ -281,7 +281,6 @@ body {
   grid-template-columns: 2fr 1.25fr;
   gap: 20px;
   align-items: center;
-  width: 75%;
 }
 
 .content-wrapper {
