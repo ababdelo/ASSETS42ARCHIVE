@@ -167,30 +167,34 @@ document.addEventListener("DOMContentLoaded", () => {
     async function fetchNTPStatus() {
         try {
             const res = await fetch(buildUrl("/api/system"));
-            if (!res.ok) return;
+            if (!res.ok) {
+                throw new Error("Failed to read NTP status");
+            }
             const data = await res.json();
             ntpStatusText.innerHTML = data.ntpSynced
                 ? '<i class="fas fa-check-circle" style="color:var(--success,#4caf50)"></i> Synced'
                 : '<i class="fas fa-exclamation-circle" style="color:var(--danger,#f44336)"></i> Not synced';
-        } catch (_) {
-            ntpStatusText.innerHTML = '<i class="fas fa-exclamation-circle"></i> Unavailable';
+            return data.ntpSynced;
+        } catch (err) {
+            ntpStatusText.innerHTML = '<i class="fas fa-exclamation-circle" style="color:var(--danger,#f44336)"></i> Unavailable';
+            throw err;
         }
     }
 
     if (ntpResyncBtn) {
         ntpResyncBtn.addEventListener("click", async () => {
             ntpResyncBtn.disabled = true;
-            ntpStatusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+            ntpStatusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Requesting NTP resync...';
             try {
                 const res = await fetch(buildUrl("/api/ntp/resync"), { method: "POST" });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || "Resync failed");
+
+                ntpStatusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Waiting for NTP sync...';
                 for (let i = 0; i < 15; i++) {
                     await new Promise((r) => setTimeout(r, 1000));
-                    const sysRes = await fetch(buildUrl("/api/system"));
-                    const sysData = await sysRes.json();
-                    if (sysData.ntpSynced) {
-                        ntpStatusText.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success,#4caf50)"></i> Synced';
+                    const synced = await fetchNTPStatus();
+                    if (synced) {
                         show("success", "NTP time sync successful");
                         ntpResyncBtn.disabled = false;
                         return;
@@ -210,8 +214,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (setupMode) {
         const ntpCard = document.getElementById("ntpCard");
         if (ntpCard) ntpCard.style.display = "none";
-    } else if (ntpStatusText) {
-        fetchNTPStatus();
     }
 
     scanBtn.addEventListener("click", scanWifi);
