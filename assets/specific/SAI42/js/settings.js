@@ -145,6 +145,75 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // --- Eye toggle for password fields ---
+    document.querySelectorAll(".eye-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const input = document.getElementById(btn.dataset.target);
+            const icon = btn.querySelector("i");
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.replace("fa-eye", "fa-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.replace("fa-eye-slash", "fa-eye");
+            }
+        });
+    });
+
+    // --- NTP Status & Resync ---
+    const ntpStatusText = document.getElementById("ntpStatusText");
+    const ntpResyncBtn = document.getElementById("ntpResyncBtn");
+
+    async function fetchNTPStatus() {
+        try {
+            const res = await fetch(buildUrl("/api/system"));
+            if (!res.ok) return;
+            const data = await res.json();
+            ntpStatusText.innerHTML = data.ntpSynced
+                ? '<i class="fas fa-check-circle" style="color:var(--success,#4caf50)"></i> Synced'
+                : '<i class="fas fa-exclamation-circle" style="color:var(--danger,#f44336)"></i> Not synced';
+        } catch (_) {
+            ntpStatusText.innerHTML = '<i class="fas fa-exclamation-circle"></i> Unavailable';
+        }
+    }
+
+    if (ntpResyncBtn) {
+        ntpResyncBtn.addEventListener("click", async () => {
+            ntpResyncBtn.disabled = true;
+            ntpStatusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+            try {
+                const res = await fetch(buildUrl("/api/ntp/resync"), { method: "POST" });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Resync failed");
+                for (let i = 0; i < 15; i++) {
+                    await new Promise((r) => setTimeout(r, 1000));
+                    const sysRes = await fetch(buildUrl("/api/system"));
+                    const sysData = await sysRes.json();
+                    if (sysData.ntpSynced) {
+                        ntpStatusText.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success,#4caf50)"></i> Synced';
+                        show("success", "NTP time sync successful");
+                        ntpResyncBtn.disabled = false;
+                        return;
+                    }
+                }
+                ntpStatusText.innerHTML = '<i class="fas fa-exclamation-circle" style="color:var(--danger,#f44336)"></i> Sync timed out';
+                show("error", "NTP sync timed out — check network");
+            } catch (err) {
+                ntpStatusText.innerHTML = '<i class="fas fa-exclamation-circle" style="color:var(--danger,#f44336)"></i> Error';
+                show("error", `Error: ${err.message}`);
+            } finally {
+                ntpResyncBtn.disabled = false;
+            }
+        });
+    }
+
+    if (setupMode) {
+        const ntpCard = document.getElementById("ntpCard");
+        if (ntpCard) ntpCard.style.display = "none";
+    } else if (ntpStatusText) {
+        fetchNTPStatus();
+    }
+
     scanBtn.addEventListener("click", scanWifi);
     if (setupMode) {
         scanWifi();
