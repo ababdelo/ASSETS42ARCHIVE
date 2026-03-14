@@ -72,8 +72,6 @@ body {
 ========================= */
 
 .navbar {
-  position: fixed;
-  top: 0;
   width: 100%;
   height: 64px;
   background: var(--nav-bg);
@@ -264,7 +262,6 @@ body {
 .main-wrapper {
   flex: 1;
   padding: 16px;
-  padding-top: 80px;
   max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
@@ -278,10 +275,10 @@ body {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 2fr 1.25fr;
+  grid-template-columns: 3fr 1.5fr;
   gap: 20px;
-  align-items: center;
-  width: 75%;
+  align-items: start;
+  width: 100%;
 }
 
 .content-wrapper {
@@ -289,18 +286,22 @@ body {
   flex-direction: column;
   gap: 20px;
   min-width: 0;
+  grid-column: 1;
+  grid-row: 1;
 }
 
 .schedule-container {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
 }
 
 .status-card,
 .chart-container,
-.schedule-panel,
-.system-card {
+.schedule-panel {
   background: var(--bg-surface);
   border-radius: 16px;
   box-shadow: var(--shadow-main);
@@ -324,6 +325,7 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   gap: 24px;
+  padding: 10px;
 }
 
 .plant-info {
@@ -411,7 +413,8 @@ body {
 ========================= */
 
 .chart-container {
-  grid-column: 1 / -1;
+  grid-column: 1;
+  grid-row: 2;
 }
 
 #sensors-chart {
@@ -974,15 +977,51 @@ body {
   text-align: center;
 }
 
+.sys-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+}
+
 .sys-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .sys-label {
   font-size: 0.75rem;
   color: var(--text-secondary);
+}
+
+.sys-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sys-icon-action {
+  border: 1px solid var(--border-light);
+  background: var(--bg-surface);
+  color: var(--accent);
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.sys-icon-action:hover {
+  background: var(--accent-soft);
+}
+
+.sys-icon-action i {
+  font-size: 0.78rem;
 }
 
 .sys-value {
@@ -1011,15 +1050,19 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .content-wrapper,
+  .schedule-container,
+  .chart-container {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
   .main-wrapper {
     max-width: 900px;
   }
 }
 
 @media (max-width: 768px) {
-  .dashboard-grid {
-    margin-top: 75px;
-  }
 
   .main-wrapper {
     padding: 12px;
@@ -1035,10 +1078,13 @@ body {
     height: 220px;
   }
 
+  .nav-title{
+    font-size: 1.15rem;
+  }
+
   .status-card,
   .chart-container,
-  .schedule-panel,
-  .system-card {
+  .schedule-panel {
     padding: 16px;
   }
 
