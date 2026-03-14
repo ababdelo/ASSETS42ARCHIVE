@@ -1,14 +1,18 @@
 .settings-wrapper-main {
   align-items: flex-start;
+  display: flex;
+  justify-content: center;
+  padding: 20px 16px 40px;
 }
 
 .settings-grid {
   width: 100%;
   max-width: 980px;
-  margin: 0 auto;
+  margin: 75px auto;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 20px;
+  align-items: start;
 }
 
 .settings-card {
@@ -31,6 +35,7 @@
 .setup-banner p {
   color: var(--text-secondary);
   line-height: 1.4;
+  margin: 0;
 }
 
 .card-title {
@@ -53,12 +58,38 @@
 }
 
 .settings-form input {
+  width: 100%;
+  box-sizing: border-box;
   border: 1px solid var(--border-light);
   background: var(--bg-muted);
   color: var(--text-primary);
   border-radius: 10px;
   padding: 12px;
   font-family: "Gugi", sans-serif;
+}
+
+.input-icon-wrapper,
+.input-password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  opacity: 0.9;
+  pointer-events: none;
+  font-size: 0.9rem;
+}
+
+.input-icon-wrapper input,
+.input-password-wrapper input {
+  padding-left: 2.4rem;
 }
 
 .settings-form input:focus {
@@ -85,6 +116,11 @@
     box-shadow 0.2s ease;
 }
 
+.save-btn {
+  width: fit-content;
+  margin: 8px auto;
+}
+
 .save-btn:hover,
 .scan-btn:hover {
   transform: translateY(-1px);
@@ -96,6 +132,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  gap: 12px;
 }
 
 .wifi-list {
@@ -115,6 +152,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
+  cursor: pointer;
 }
 
 .wifi-item strong {
@@ -127,6 +166,7 @@
 .wifi-meta {
   font-size: 0.8rem;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .wifi-empty {
@@ -136,27 +176,17 @@
   padding: 20px;
 }
 
-@media (max-width: 860px) {
-  .settings-grid {
-    grid-template-columns: 1fr;
-  }
-}
-.input-password-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
 .input-password-wrapper input {
   flex: 1;
-  margin-bottom: 0 !important;
+  margin-bottom: 0;
   padding-right: 2.8rem;
 }
 
 .eye-btn {
   position: absolute;
   right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
   cursor: pointer;
@@ -173,11 +203,6 @@
 .ntp-status {
   padding: 0.5rem 0;
   font-size: 0.9rem;
-}
-
-.settings-grid {
-  align-items: start;
-  row-gap: 1rem;
 }
 
 #setupBanner {
@@ -202,6 +227,10 @@
 }
 
 @media (max-width: 900px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
   #setupBanner,
   #adminCard,
   #wifiCard,
