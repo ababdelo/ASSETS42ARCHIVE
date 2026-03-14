@@ -141,3 +141,72 @@
     grid-template-columns: 1fr;
   }
 }
+.input-password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.input-password-wrapper input {
+  flex: 1;
+  margin-bottom: 0 !important;
+  padding-right: 2.8rem;
+}
+
+.eye-btn {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.55;
+  line-height: 1;
+  padding: 0;
+}
+
+.eye-btn:hover {
+  opacity: 1;
+}
+
+.ntp-status {
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.settings-grid {
+  align-items: start;
+  row-gap: 1rem;
+}
+
+#setupBanner {
+  grid-column: 1 / -1;
+}
+
+#adminCard {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+#wifiCard {
+  grid-column: 2;
+  grid-row: 2 / span 2;
+  align-self: start;
+}
+
+#ntpCard {
+  grid-column: 1;
+  grid-row: 3;
+  align-self: start;
+}
+
+@media (max-width: 900px) {
+  #setupBanner,
+  #adminCard,
+  #wifiCard,
+  #ntpCard {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
