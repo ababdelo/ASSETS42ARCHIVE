@@ -15,3 +15,7 @@ Desktop.ini
 
 # History Files
 .history/
+
+# Ignore diff files
+*.diff
+diff.*

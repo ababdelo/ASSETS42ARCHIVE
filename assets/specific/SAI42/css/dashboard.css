@@ -278,9 +278,10 @@ body {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 3.5fr 2fr;
+  grid-template-columns: 2fr 1.25fr;
   gap: 20px;
   align-items: center;
+  width: 75%;
 }
 
 .content-wrapper {
@@ -1016,6 +1017,14 @@ body {
 }
 
 @media (max-width: 768px) {
+  .dashboard-grid {
+    margin-top: 75px;
+  }
+
+  .main-wrapper {
+    padding: 12px;
+  }
+
   #sensors-chart {
     height: 250px;
   }
@@ -1030,7 +1039,7 @@ body {
   .chart-container,
   .schedule-panel,
   .system-card {
-    padding: 16px 50px;
+    padding: 16px;
   }
 
   .system-grid {
