@@ -755,8 +755,126 @@ document.addEventListener("DOMContentLoaded", () => {
     setInterval(loadChartData, 10000);
     loadChartData();
 
+    // ======= Dashboard NTP Resync + Client IP =======
+    const ntpResyncIconBtn = document.getElementById('ntpResyncIconBtn');
+    const ntpResyncIcon = document.getElementById('ntpResyncIcon');
+    const sysNtpEl = document.getElementById('sysNtp');
+    const sysIpEl = document.getElementById('sysIp');
+    let cachedClientIp = '';
+
+    function withToken(path) {
+        const joiner = path.includes('?') ? '&' : '?';
+        return API_KEY ? `${path}${joiner}token=${encodeURIComponent(API_KEY)}` : path;
+    }
+
+    function isIpv4(value) {
+        return /^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/.test(value || '');
+    }
+
+    function isPrivateIpv4(value) {
+        if (!isIpv4(value)) return false;
+        const parts = value.split('.').map(Number);
+        return parts[0] === 10
+            || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31)
+            || (parts[0] === 192 && parts[1] === 168);
+    }
+
+    const hasSystemInfoCard = !!(
+        document.getElementById('sysUptime')
+        && document.getElementById('sysRssi')
+        && document.getElementById('sysHeap')
+        && document.getElementById('sysNtp')
+        && document.getElementById('sysIp')
+        && document.getElementById('sysWsClients')
+    );
+
+    async function detectClientIp() {
+        try {
+            const rtc = new RTCPeerConnection({
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            });
+            rtc.createDataChannel('ip');
+            const ipPromise = new Promise((resolve) => {
+                const timeout = setTimeout(() => resolve(''), 1500);
+                rtc.onicecandidate = (event) => {
+                    if (!event.candidate || !event.candidate.candidate) return;
+                    const match = event.candidate.candidate.match(/(\d{1,3}(?:\.\d{1,3}){3})/);
+                    if (match && isPrivateIpv4(match[1])) {
+                        clearTimeout(timeout);
+                        resolve(match[1]);
+                    }
+                };
+            });
+
+            const offer = await rtc.createOffer();
+            await rtc.setLocalDescription(offer);
+            const rtcIp = await ipPromise;
+            rtc.close();
+            if (rtcIp) return rtcIp;
+        } catch (e) {
+            console.warn('Local client IP detect failed', e);
+        }
+
+        return '';
+    }
+
+    async function resyncDashboardNtp() {
+        if (!ntpResyncIconBtn || !ntpResyncIcon || !sysNtpEl) return;
+        ntpResyncIconBtn.disabled = true;
+        ntpResyncIcon.classList.add('fa-spin');
+        sysNtpEl.textContent = 'Resyncing...';
+
+        try {
+            const res = await fetch(withToken('/api/ntp/resync'), { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Resync failed');
+
+            for (let i = 0; i < 15; i++) {
+                await new Promise((r) => setTimeout(r, 1000));
+                const statusRes = await fetch(withToken('/api/system'));
+                if (!statusRes.ok) continue;
+                const status = await statusRes.json();
+                if (status.ntpSynced) {
+                    sysNtpEl.textContent = 'Synced';
+                    showNotification('success', 'Success: NTP time synced');
+                    return;
+                }
+            }
+
+            sysNtpEl.textContent = 'Sync timed out';
+            showNotification('error', 'Error: NTP sync timed out');
+        } catch (err) {
+            sysNtpEl.textContent = 'Error';
+            showNotification('error', `Error: ${err.message}`);
+        } finally {
+            ntpResyncIcon.classList.remove('fa-spin');
+            ntpResyncIconBtn.disabled = false;
+        }
+    }
+
+    if (hasSystemInfoCard && ntpResyncIconBtn) {
+        ntpResyncIconBtn.addEventListener('click', resyncDashboardNtp);
+    }
+
+    if (hasSystemInfoCard) {
+        detectClientIp().then((ip) => {
+            cachedClientIp = ip;
+            if (sysIpEl && cachedClientIp) {
+                sysIpEl.textContent = cachedClientIp;
+            }
+        });
+    }
+
     // ======= System Info =======
     async function fetchSystemInfo() {
+        if (!hasSystemInfoCard) return;
+
+        const sysUptimeEl = document.getElementById('sysUptime');
+        const sysRssiEl = document.getElementById('sysRssi');
+        const sysHeapEl = document.getElementById('sysHeap');
+
+        if (!sysUptimeEl || !sysRssiEl || !sysHeapEl) return;
+
         try {
             const res = await fetch(`/api/system?token=${API_KEY}`);
             if (!res.ok) return;
@@ -765,24 +883,31 @@ document.addEventListener("DOMContentLoaded", () => {
             const days = Math.floor(upSec / 86400);
             const hrs = Math.floor((upSec % 86400) / 3600);
             const mins = Math.floor((upSec % 3600) / 60);
-            document.getElementById('sysUptime').textContent = days > 0 ? `${days}d ${hrs}h ${mins}m` : `${hrs}h ${mins}m`;
+            sysUptimeEl.textContent = days > 0 ? `${days}d ${hrs}h ${mins}m` : `${hrs}h ${mins}m`;
             const rssi = d.rssi || 0;
             let signal = 'Weak';
             if (rssi > -50) signal = 'Excellent';
             else if (rssi > -60) signal = 'Good';
             else if (rssi > -70) signal = 'Fair';
-            document.getElementById('sysRssi').textContent = `${rssi} dBm (${signal})`;
+            sysRssiEl.textContent = `${rssi} dBm (${signal})`;
             const heap = d.freeHeap || 0;
-            document.getElementById('sysHeap').textContent = heap > 1024 ? `${(heap / 1024).toFixed(1)} KB` : `${heap} B`;
-            if (d.ip) document.getElementById('sysIp').textContent = d.ip;
+            sysHeapEl.textContent = heap > 1024 ? `${(heap / 1024).toFixed(1)} KB` : `${heap} B`;
             const ntpEl = document.getElementById('sysNtp');
             const wsEl = document.getElementById('sysWsClients');
+            const ipEl = document.getElementById('sysIp');
+            if (ipEl) {
+                const ipFromApi = d.clientIp || d.clientIP || d.client_ip || '';
+                const privateApiIp = isPrivateIpv4(ipFromApi) ? ipFromApi : '';
+                ipEl.textContent = cachedClientIp || privateApiIp || 'Unavailable';
+            }
             if (ntpEl) ntpEl.textContent = d.ntpSynced ? 'Synced' : 'Not synced';
             if (wsEl) wsEl.textContent = d.wsClients !== undefined ? d.wsClients : '--';
         } catch (e) { console.error('System info error', e); }
     }
-    fetchSystemInfo();
-    setInterval(fetchSystemInfo, 15000);
+    if (hasSystemInfoCard) {
+        fetchSystemInfo();
+        setInterval(fetchSystemInfo, 15000);
+    }
 
     // ======= Export Sensor Data =======
     document.getElementById('exportBtn').addEventListener('click', () => {
