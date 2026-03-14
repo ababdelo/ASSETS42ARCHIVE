@@ -2,13 +2,13 @@
   align-items: flex-start;
   display: flex;
   justify-content: center;
-  padding: 20px 16px 40px;
+  padding: 20px 16px;
 }
 
 .settings-grid {
   width: 100%;
   max-width: 980px;
-  margin: 75px auto;
+  margin: 10px auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 20px;
@@ -135,6 +135,10 @@
   gap: 12px;
 }
 
+.scan-header span i {
+  margin-right: 10px;
+}
+
 .wifi-list {
   max-height: 270px;
   overflow-y: auto;
@@ -220,10 +224,59 @@
   align-self: start;
 }
 
-#ntpCard {
+#deviceStatusCard {
   grid-column: 1;
   grid-row: 3;
   align-self: start;
+}
+
+.device-status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.device-status-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-muted);
+  border-radius: 10px;
+}
+
+.device-status-item > i {
+  font-size: 1.1rem;
+  color: var(--accent);
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.device-status-item .sys-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.device-status-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.device-status-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.device-status-value {
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @media (max-width: 900px) {
@@ -234,7 +287,7 @@
   #setupBanner,
   #adminCard,
   #wifiCard,
-  #ntpCard {
+  #deviceStatusCard {
     grid-column: auto;
     grid-row: auto;
   }
